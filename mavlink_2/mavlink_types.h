@@ -7,7 +7,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-
+#pragma anon_unions
 #ifdef MAVLINK_USE_CXX_NAMESPACE
 namespace mavlink {
 #endif
@@ -16,7 +16,10 @@ namespace mavlink {
 #ifdef __GNUC__
   #define MAVPACKED( __Declaration__ ) __Declaration__ __attribute__((packed))
 #else
-  #define MAVPACKED( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop) )
+ 
+    #define MAVPACKED( __Declaration__ ) __Declaration__
+
+//  #define MAVPACKED( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop) )
 #endif
 
 #ifndef MAVLINK_MAX_PAYLOAD_LEN
@@ -286,6 +289,9 @@ typedef struct __mavlink_msg_entry {
 	uint8_t target_system_ofs; // payload offset to target_system, or 0
 	uint8_t target_component_ofs; // payload offset to target_component, or 0
 } mavlink_msg_entry_t;
+
+
+
 
 /*
   incompat_flags bits

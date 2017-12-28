@@ -3,6 +3,9 @@
  *  @see http://mavlink.org
  */
 #pragma once
+#ifndef MAVLINK_USE_CONVENIENCE_FUNCTIONS
+#define MAVLINK_USE_CONVENIENCE_FUNCTIONS
+#endif
 #ifndef MAVLINK_COMMON_H
 #define MAVLINK_COMMON_H
 
@@ -10,9 +13,10 @@
     #error Wrong include order: MAVLINK_COMMON.H MUST NOT BE DIRECTLY USED. Include mavlink.h from the same directory instead or set ALL AND EVERY defines from MAVLINK.H manually accordingly, including the #define MAVLINK_H call.
 #endif
 
-#undef MAVLINK_THIS_XML_IDX
+#ifndef MAVLINK_THIS_XML_IDX
 #define MAVLINK_THIS_XML_IDX 1
-
+#endif
+    
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -1205,6 +1209,8 @@ typedef enum GPS_FIX_TYPE
 #include "./mavlink_msg_protocol_version.h"
 #include "./mavlink_msg_uavcan_node_status.h"
 #include "./mavlink_msg_uavcan_node_info.h"
+
+#include "./mavlink_msg_ahrs.h"
 
 // base include
 

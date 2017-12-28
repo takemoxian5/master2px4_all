@@ -5,13 +5,17 @@
 #include "mavlink_types.h"
 #include "mavlink_conversions.h"
 #include <stdio.h>
-
+#include "OpenTel_Mavlink.h"
 #ifndef MAVLINK_HELPER
 #define MAVLINK_HELPER
 #endif
 
 #include "mavlink_sha256.h"
 
+#ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
+extern mavlink_system_t mavlink_system;
+extern mavlink_message_t* msg;
+#endif
 #ifdef MAVLINK_USE_CXX_NAMESPACE
 namespace mavlink {
 #endif
@@ -1081,22 +1085,13 @@ MAVLINK_HELPER uint8_t put_bitfield_n_by_index(int32_t b, uint8_t bits, uint8_t 
 // to send 1 byte at a time, or MAVLINK_SEND_UART_BYTES() to send a
 // whole packet at a time
 
-/*
+
 
 #include "mavlink_types.h"
+#include "usart.h"	
 
-void comm_send_ch(mavlink_channel_t chan, uint8_t ch)
-{
-    if (chan == MAVLINK_COMM_0)
-    {
-        uart0_transmit(ch);
-    }
-    if (chan == MAVLINK_COMM_1)
-    {
-    	uart1_transmit(ch);
-    }
-}
- */
+
+ 
 
 MAVLINK_HELPER void _mavlink_send_uart(mavlink_channel_t chan, const char *buf, uint16_t len)
 {
