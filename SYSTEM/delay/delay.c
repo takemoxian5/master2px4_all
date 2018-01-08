@@ -222,6 +222,19 @@ void delay_ms(u16 nms)
 	}
 	if(remain)delay_xms(remain);
 } 
+
+volatile uint32_t sysTickUptime = 0;
+
+#define TICK_PER_SECOND 1000 
+#define TICK_US	(1000000/TICK_PER_SECOND)
+uint32_t GetSysTime_us(void) 
+{
+	register uint32_t ms;
+	u32 value;
+	ms = sysTickUptime;
+	value = ms * TICK_US + (SysTick->LOAD - SysTick->VAL) * TICK_US / SysTick->LOAD;
+	return value;
+}
 #endif
 			 
 

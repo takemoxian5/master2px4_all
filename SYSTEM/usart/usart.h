@@ -2,7 +2,6 @@
 #define __USART_H
 //#include "stm32f4xx_conf.h"
 #include "stm32f4xx.h" 
-#include "cppforstm32.h"
 //#include "stm32f0xx.h"
 #include <stdio.h>
 #include "mavlink_types.h"
@@ -22,9 +21,13 @@ void comm_send_ch(mavlink_channel_t chan, uint8_t ch);
 #define DEBUG_SEND_MSG
 #ifdef DEBUG_SEND_MSG
 extern char  test_cntxx[20];
-#define  Auto_PRINTLOG(x)  {{printf("====================%d=finished!\r\n",x);\
-	test_cntxx[x]=5;}}
+#define  Auto_PRINTLOG(x)  {if(test_cntxx[x]!=0xa5){printf("====================%d=finished!\r\n",x);\
+	test_cntxx[x]=0;}}
 #endif
+
+
+//void remote_update(void);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

@@ -7,10 +7,14 @@
    If you want MAVLink on a system that is native big-endian,
    you need to define NATIVE_BIG_ENDIAN
 */
+
+
+#define MAV_LOG_TSET
+
 #ifdef NATIVE_BIG_ENDIAN
 # define MAVLINK_NEED_BYTE_SWAP (MAVLINK_ENDIAN == MAVLINK_LITTLE_ENDIAN)
 #else
-# define MAVLINK_NEED_BYTE_SWAP (MAVLINK_ENDIAN != MAVLINK_LITTLE_ENDIAN)
+#define MAVLINK_NEED_BYTE_SWAP (MAVLINK_ENDIAN != MAVLINK_LITTLE_ENDIAN)
 #endif
 
 #ifndef MAVLINK_STACK_BUFFER
@@ -18,7 +22,7 @@
 #endif
 
 #ifndef MAVLINK_AVOID_GCC_STACK_BUG
-# define MAVLINK_AVOID_GCC_STACK_BUG defined(__GNUC__)
+#define MAVLINK_AVOID_GCC_STACK_BUG defined(__GNUC__)
 #endif
 
 #ifndef MAVLINK_ASSERT

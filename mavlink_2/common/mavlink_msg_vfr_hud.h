@@ -330,7 +330,12 @@ static inline void mavlink_msg_vfr_hud_decode(const mavlink_message_t* msg, mavl
     vfr_hud->climb = mavlink_msg_vfr_hud_get_climb(msg);
     vfr_hud->heading = mavlink_msg_vfr_hud_get_heading(msg);
     vfr_hud->throttle = mavlink_msg_vfr_hud_get_throttle(msg);
+	
 #else
+#ifdef MAV_LOG_TSET
+		printf("vfr_hud->heading===%d\r\n",vfr_hud->heading);
+#endif
+
         uint8_t len = msg->len < MAVLINK_MSG_ID_VFR_HUD_LEN? msg->len : MAVLINK_MSG_ID_VFR_HUD_LEN;
         memset(vfr_hud, 0, MAVLINK_MSG_ID_VFR_HUD_LEN);
     memcpy(vfr_hud, _MAV_PAYLOAD(msg), len);

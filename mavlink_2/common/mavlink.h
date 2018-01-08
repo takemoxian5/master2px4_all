@@ -10,6 +10,7 @@
 
 #ifndef MAVLINK_STX
 #define MAVLINK_STX 253
+
 #endif
 
 #ifndef MAVLINK_ENDIAN

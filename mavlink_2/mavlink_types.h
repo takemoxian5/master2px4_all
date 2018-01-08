@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #pragma anon_unions
+
 #ifdef MAVLINK_USE_CXX_NAMESPACE
 namespace mavlink {
 #endif
