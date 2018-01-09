@@ -5,7 +5,7 @@
 //#include "key.h"
 //#include "lcd.h"
 //#include "ov7725.h"
-#include "timer.h"
+#include "mytimer.h"
 //#include "malloc.h"
 #include "sdio_sdcard.h"
 //#include "usmart.h"
@@ -35,6 +35,15 @@ mavlink_message_t* last_msg;
 
 uint8_t testTxBuf[10] = {1,2,3,4,5,6,7,8,9,10};
 uint16_t tranlTimer;
+
+
+u8 Init_Finish = 0;
+//u8 fly_ready = 0;
+
+
+
+
+
 
 
 FRESULT open_append (
@@ -83,12 +92,16 @@ char  test_cntxx[20];
  */
 int main(void)
 {
-    SysTick_Config(SystemCoreClock / 1000);
-    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);//����ϵͳ�ж����ȼ�����2
-    delay_init(168);      //��ʼ����ʱ����
-//  uart_init(115200);      //��ʼ�����ڲ�����Ϊ115200
+    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);//中断优先级组别设置
+	//SysTick_Config(SystemCoreClock / 1000); //滴答时钟
+	SysTick_Configuration(); 	//滴答时钟
+    delay_init(168);      // 延时
     serial_open(0, 0);
+    Para_Init();							//参数初始化
     TIM3_Int_Init(0xFFFF,8400-1);   //��ʱ��ʱ��84M����Ƶϵ��8400������84M/8400=10Khz�ļ���Ƶ��
+    
+    Cycle_Time_Init();
+    
     printf("STM32F4Discovery Board initialization finished!\r\n");
 
     mavlink_system.sysid =MAV_TYPE_GCS;// MAV_TYPE_GCS=6地面站角色 MAV_TYPE_FIXED_WING;//MAV_TYPE_GENERIC;

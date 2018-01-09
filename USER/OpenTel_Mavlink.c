@@ -330,16 +330,11 @@ void update(void)
         if (mavlink_parse_char(chan, c, &msg, &status))
         {
             mavlink_active = true;
-            printf("new msg msgid======+========================%d====get!\r\n",msg.msgid);
-
             handleMessage(&msg);
-
             if(msg.msgid!=MAVLINK_MSG_ID_HEARTBEAT
 				&&msg.msgid!=MAVLINK_MSG_ID_SYS_STATUS
 				&&msg.msgid!=MAVLINK_MSG_ID_ATTITUDE
 				&&msg.msgid!=MAVLINK_MSG_ID_VFR_HUD //BATTERY
-				
-
 				&&msg.msgid!=MAVLINK_MSG_ID_SERVO_OUTPUT_RAW
 
 			
@@ -398,7 +393,6 @@ void handleMessage(mavlink_message_t* msg)
         case MAVLINK_MSG_ID_MANUAL_CONTROL:
         {
             mavlink_msg_manual_control_decode(msg, &manual_control);
-Auto_PRINTLOG(4);//break point>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             break;
         }
 		case MAVLINK_MSG_ID_SYS_STATUS:
@@ -409,7 +403,6 @@ Auto_PRINTLOG(4);//break point>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 		case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
         {
             mavlink_msg_local_position_ned_decode( msg, &local_position_ned);
-Auto_PRINTLOG(6);//break point>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             break;
         }
 
@@ -419,7 +412,6 @@ Auto_PRINTLOG(6);//break point>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     }     // end switch
 
 } // end handle mavlink
-
 
 #ifdef __cplusplus
 }

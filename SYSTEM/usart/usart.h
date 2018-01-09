@@ -24,7 +24,42 @@ extern char  test_cntxx[20];
 #define  Auto_PRINTLOG(x)  {if(test_cntxx[x]!=0xa5){printf("====================%d=finished!\r\n",x);\
 	test_cntxx[x]=0;}}
 #endif
+    
+    
+    
+    
+    
+void receiverPutChar(uint8_t ch);
+void receiverSend(uint8_t *dat,uint8_t size);
+    
+typedef struct __ReceiverRemote_t
+{
+    uint32_t cmdReadyFlag; //Rx_Handle_Flag
+    uint8_t  cmdIn[10]; //Rx_buff
+    int32_t  rxIndex;  //Rx_adr
+    int32_t  rxLength; //Rx_length
+} ReceiverRemote_t;
 
+extern ReceiverRemote_t myReceiver;
+extern  uint8_t size;
+extern  uint8_t type;
+extern  uint8_t sendBuf[30];
+extern uint8_t   startState;
+extern uint16_t u16Height;
+extern uint16_t u16Distance;
+extern uint32_t u32Distance;
+
+extern uint16_t u16Dspeed;
+extern int8_t   s8Hspeed;
+extern uint8_t  Health;
+extern uint16_t  cnt;    
+    
+    
+    
+    
+    
+    
+    
 
 //void remote_update(void);
 

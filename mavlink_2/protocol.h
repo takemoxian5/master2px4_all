@@ -8,7 +8,6 @@
    you need to define NATIVE_BIG_ENDIAN
 */
 
-
 #define MAV_LOG_TSET
 
 #ifdef NATIVE_BIG_ENDIAN

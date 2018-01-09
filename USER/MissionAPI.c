@@ -1,5 +1,8 @@
 #include "usart.h"	
 #include "MissionAPI.h"	
+#include "height_ctrl.h"
+#include "ctrl.h"
+
 s16 loop_cnt;
 
 
@@ -46,7 +49,7 @@ void Duty_2ms()
 
 //	CTRL_1( inner_loop_time ); 										//内环角速度控制。输入：执行周期，期望角速度，测量角速度，角度前馈；输出：电机PWM占空比。<函数未封装>
 	
-	RC_Duty( inner_loop_time , Rc_Pwm_In );				// 遥控器通道数据处理 ，输入：执行周期，接收机pwm捕获的数据。
+//	RC_Duty( inner_loop_time , Rc_Pwm_In );				// 遥控器通道数据处理 ，输入：执行周期，接收机pwm捕获的数据。
 	
 	
 	
@@ -62,9 +65,9 @@ void Duty_5ms()
 	test[2] = GetSysTime_us()/1000000.0f;
 	
 	/*IMU更新姿态。输入：半个执行周期，三轴陀螺仪数据（转换到度每秒），三轴加速度计数据（4096--1G）；输出：ROLPITYAW姿态角*/
- 	IMUupdate(0.5f *outer_loop_time,mpu6050.Gyro_deg.x, mpu6050.Gyro_deg.y, mpu6050.Gyro_deg.z, mpu6050.Acc.x, mpu6050.Acc.y, mpu6050.Acc.z,&Roll,&Pitch,&Yaw);
+ //	IMUupdate(0.5f *outer_loop_time,mpu6050.Gyro_deg.x, mpu6050.Gyro_deg.y, mpu6050.Gyro_deg.z, mpu6050.Acc.x, mpu6050.Acc.y, mpu6050.Acc.z,&Roll,&Pitch,&Yaw);
 
- 	CTRL_2( outer_loop_time ); 											// 外环角度控制。输入：执行周期，期望角度（摇杆量），姿态角度；输出：期望角速度。<函数未封装>
+// 	CTRL_2( outer_loop_time ); 											// 外环角度控制。输入：执行周期，期望角度（摇杆量），姿态角度；输出：期望角速度。<函数未封装>
 	
 	test[3] = GetSysTime_us()/1000000.0f;
 }
@@ -130,7 +133,6 @@ void Duty_Loop()   					//最短任务周期为1ms，总的代码执行时间需
 		loop.check_flag = 0;		//循环运行完毕标志
 	}
 }
-
 
 
 

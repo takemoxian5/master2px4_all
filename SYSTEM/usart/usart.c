@@ -418,26 +418,7 @@ uint16_t serial_free2(void)
 //    }
 //  }
 //}
-typedef struct __ReceiverRemote_t
-{
-    uint32_t cmdReadyFlag; //Rx_Handle_Flag
-    uint8_t  cmdIn[10]; //Rx_buff
-    int32_t  rxIndex;  //Rx_adr
-    int32_t  rxLength; //Rx_length
-} ReceiverRemote_t;
-ReceiverRemote_t myReceiver;
-static uint8_t size=0;
-static uint8_t type=0;
-uint8_t sendBuf[30];
-uint8_t   startState=0;
-uint16_t u16Height=0;
-uint16_t u16Distance=0;
-uint32_t u32Distance=0;
 
-uint16_t u16Dspeed=0;
-int8_t   s8Hspeed=0;
-uint8_t  Health;
-uint16_t  cnt;
 void uart2_putchar(unsigned char ch)
 {
     while (USART_GetFlagStatus(USART_USER2, USART_FLAG_TC) == RESET)
@@ -463,6 +444,19 @@ void receiverSend(uint8_t *dat,uint8_t size)
 
 
 
+ReceiverRemote_t myReceiver;
+ uint8_t size=0;
+ uint8_t type=0;
+uint8_t sendBuf[30];
+uint8_t   startState=0;
+uint16_t u16Height=0;
+uint16_t u16Distance=0;
+uint32_t u32Distance=0;
+
+uint16_t u16Dspeed=0;
+int8_t   s8Hspeed=0;
+uint8_t  Health;
+uint16_t  cnt;  
 
 
 

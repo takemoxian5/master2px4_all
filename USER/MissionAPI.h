@@ -2,6 +2,13 @@
 #define _MISSIONAPI_H_
 
 #include "stm32f4xx.h"
+void Loop_check(void);
+
+void Duty_Loop(void);
+
+void Inner_Loop(float);
+
+void Outer_Loop(float);
 
 
 
@@ -19,15 +26,6 @@ typedef struct
 	s16 cnt_50ms;
 	u16 time;
 }loop_t;
-
-void Loop_check(void);
-
-void Duty_Loop(void);
-
-void Inner_Loop(float);
-
-void Outer_Loop(float);
-
 
 
 
