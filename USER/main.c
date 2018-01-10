@@ -34,7 +34,6 @@ mavlink_message_t* msg ;
 mavlink_message_t* last_msg;
 
 uint8_t testTxBuf[10] = {1,2,3,4,5,6,7,8,9,10};
-uint16_t tranlTimer;
 
 
 u8 Init_Finish = 0;
@@ -104,8 +103,8 @@ int main(void)
     
     printf("STM32F4Discovery Board initialization finished!\r\n");
 
-    mavlink_system.sysid =MAV_TYPE_GCS;// MAV_TYPE_GCS=6地面站角色 MAV_TYPE_FIXED_WING;//MAV_TYPE_GENERIC;
-    mavlink_system.compid =MAV_AUTOPILOT_GENERIC;//=0
+    mavlink_system.sysid =1;//MAV_TYPE_GCS;// MAV_TYPE_GCS=6地面站角色 MAV_TYPE_FIXED_WING;//MAV_TYPE_GENERIC;
+    mavlink_system.compid =190;//MAV_AUTOPILOT_GENERIC;//=0
 	mavlink_servo_output_raw_t* servo_output_raw;
 	servo_output_raw->time_usec = 20000000;
 	servo_output_raw->servo1_raw = 950;
@@ -215,9 +214,9 @@ int main(void)
 //        mavlink_send_message(0, MSG_LOCATION, 0);
         while(1)
         {
-            if(tranlTimer % 200==1)
+            if(sysTickUptime % 200==1)
             {
-//			  tranlTimer = 0;
+//			  sysTickUptime = 0;
 //			  mavlink_send_message(0, MSG_LOCATION, 0);
 			  mavlink_send_message(0, MSG_HEARTBEAT, 0);
 //			mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&com);
@@ -268,11 +267,11 @@ int main(void)
 //                mavlink_send_message(0, MSG_AHRS, 0);
 //                mavlink_test_minimal(15, 7, msg);
             }
-			else if(tranlTimer % 200==5)
+			else if(sysTickUptime % 200==5)
             {
 uint8_t            system_id=6,component_id= 0;
 //uint8_t            system_id=mavlink_msg_mission_count_get_target_system(msg);
-//uint8_t					component_id=  mavlink_msg_mission_count_get_target_component(msg);
+//uint8_t			 component_id=  mavlink_msg_mission_count_get_target_component(msg);
 
 //mavlink_test_set_mode(system_id, component_id, last_msg);
 
