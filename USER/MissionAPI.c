@@ -2,7 +2,10 @@
 #include "MissionAPI.h"	
 #include "height_ctrl.h"
 #include "ctrl.h"
+#include "OpenTel_Mavlink.h"
+#include "include.h"
 
+#include "cppforstm32.h"
 s16 loop_cnt;
 
 
@@ -226,5 +229,263 @@ void remote_update(void)
         printf("\r\n");
     }
 #endif
+}
+
+
+
+static void item_count(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+#ifdef MAVLINK_STATUS_FLAG_OUT_MAVLINK1
+    mavlink_status_t *status = mavlink_get_channel_status(MAVLINK_COMM_0);
+        if ((status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) && MAVLINK_MSG_ID_MISSION_COUNT >= 256) {
+            return;
+        }
+#endif
+    mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+    mavlink_mission_count_t packet_in = {
+        2,1,190,0
+    };
+    mavlink_mission_count_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        packet1.count = packet_in.count;
+        packet1.target_system = packet_in.target_system;
+        packet1.target_component = packet_in.target_component;
+        packet1.mission_type = packet_in.mission_type;
+        
+        
+#ifdef MAVLINK_STATUS_FLAG_OUT_MAVLINK1
+        if (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) {
+           // cope with extensions
+           memset(MAVLINK_MSG_ID_MISSION_COUNT_MIN_LEN + (char *)&packet1, 0, sizeof(packet1)-MAVLINK_MSG_ID_MISSION_COUNT_MIN_LEN);
+        }
+#endif
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_mission_count_encode(system_id, component_id, &msg, &packet1);
+    mavlink_msg_mission_count_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+//下面两种 效果 一致，
+#if 0
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_mission_count_pack(system_id, component_id, &msg , packet1.target_system , packet1.target_component , packet1.count , packet1.mission_type );
+    mavlink_msg_mission_count_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_mission_count_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.target_system , packet1.target_component , packet1.count , packet1.mission_type );
+    mavlink_msg_mission_count_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+#endif
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+            comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+    mavlink_msg_mission_count_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_mission_count_send(MAVLINK_COMM_1 , packet1.target_system , packet1.target_component , packet1.count , packet1.mission_type );
+    mavlink_msg_mission_count_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
+//mavlink_message_t msg_temp[100];//建议做局部变量
+
+
+void item_pack(mavlink_mission_item_t* msg,
+                                uint16_t seq, uint16_t command, float param1, float param2, float param3, float param4, float x, float y, float z)
+{
+    mavlink_mission_item_t packet;
+
+	
+    msg->param1 = param1;
+    msg->param2 = param2;
+    msg->param3 = param3;
+    msg->param4 = param4;
+    msg->x = x;
+	msg->y = y;
+	msg->z = z;
+	msg->seq = seq;
+	msg->command = command;
+	msg->target_system = 1;
+	msg->target_component = 190;
+	msg->frame = command ==MAV_CMD_NAV_WAYPOINT ? 3:2;	//global_relative=3 ,mission=2
+	msg->current = seq ==0? 1:0;  //set current at first point				//G201801111281 ChenYang 
+	msg->autocontinue = true;
+	msg->mission_type = 0;
+
+//	  packet->param1 = param1;
+//    packet.param2 = param2;
+//    packet.param3 = param3;
+//    packet.param4 = param4;
+//    packet.x = x;
+//    packet.y = y;
+//    packet.z = z;
+//    packet.seq = seq;
+//    packet.command = command;
+//    packet.target_system = 1;
+//    packet.target_component = 190;
+//    packet.frame = command ==MAV_CMD_NAV_WAYPOINT ? 3:2;  //global_relative=3 ,mission=2
+//	packet.current = seq ==0? 1:0;  //set current at first point              //G201801111281 ChenYang 
+//    packet.autocontinue = true;
+//    packet.mission_type = 0;
+////	msg =packet;
+//    memcpy(msg, &packet, MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN);
+//	msg->msgid = MAVLINK_MSG_ID_MISSION_ITEM;
+	
+//    return mavlink_finalize_message(msg, mavlink_system.sysid, mavlink_system.compid, MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN, MAVLINK_MSG_ID_MISSION_ITEM_LEN, MAVLINK_MSG_ID_MISSION_ITEM_CRC);
+}
+
+static void waypoint_send(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+#ifdef MAVLINK_STATUS_FLAG_OUT_MAVLINK1
+    mavlink_status_t *status = mavlink_get_channel_status(MAVLINK_COMM_0);
+        if ((status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) && MAVLINK_MSG_ID_MISSION_ITEM >= 256) {
+            return;
+        }
+#endif
+    mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+    mavlink_mission_item_t packet_in = {
+//        17.0,45.0,73.0,101.0,
+//			129.0,157.0,185.0,
+//			18691,18795,101,168,235,46,113,180
+			  0,0,0,0,
+				22.5731620,113.5783691,25.0000000,
+				0,16,1,190,3,0,1,0
+    };
+    mavlink_mission_item_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        packet1.param1 = packet_in.param1;
+        packet1.param2 = packet_in.param2;
+        packet1.param3 = packet_in.param3;
+        packet1.param4 = packet_in.param4;
+        packet1.x = packet_in.x;
+        packet1.y = packet_in.y;
+        packet1.z = packet_in.z;
+        packet1.seq = packet_in.seq;
+        packet1.command = packet_in.command;
+        packet1.target_system = packet_in.target_system;
+        packet1.target_component = packet_in.target_component;
+        packet1.frame = packet_in.frame;
+        packet1.current = packet_in.current;
+        packet1.autocontinue = packet_in.autocontinue;
+        packet1.mission_type = packet_in.mission_type;
+        
+        
+#ifdef MAVLINK_STATUS_FLAG_OUT_MAVLINK1
+        if (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) {
+           // cope with extensions
+           memset(MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN + (char *)&packet1, 0, sizeof(packet1)-MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN);
+        }
+#endif
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_mission_item_encode(system_id, component_id, &msg, &packet1);
+    mavlink_msg_mission_item_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_mission_item_pack(system_id, component_id, &msg , packet1.target_system , packet1.target_component , packet1.seq , packet1.frame , packet1.command , packet1.current , packet1.autocontinue , packet1.param1 , packet1.param2 , packet1.param3 , packet1.param4 , packet1.x , packet1.y , packet1.z , packet1.mission_type );
+    mavlink_msg_mission_item_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_mission_item_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.target_system , packet1.target_component , packet1.seq , packet1.frame , packet1.command , packet1.current , packet1.autocontinue , packet1.param1 , packet1.param2 , packet1.param3 , packet1.param4 , packet1.x , packet1.y , packet1.z , packet1.mission_type );
+    mavlink_msg_mission_item_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+            comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+    mavlink_msg_mission_item_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_mission_item_send(MAVLINK_COMM_1 , packet1.target_system , packet1.target_component , packet1.seq , packet1.frame , packet1.command , packet1.current , packet1.autocontinue , packet1.param1 , packet1.param2 , packet1.param3 , packet1.param4 , packet1.x , packet1.y , packet1.z , packet1.mission_type );
+
+
+	mavlink_msg_mission_item_decode(last_msg, &packet2);
+    MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+	//最简方式
+mavlink_mission_item_t packet3 = {
+			  0,0,0,0,
+				22.5730420,113.57822241,25.0000000,
+//				2,16,0,1,190,1,1,1
+				1,16,1,190,3,1,1,0
+    };
+memset(&packet1, 0, sizeof(packet1));
+packet1 =packet3;
+
+#ifdef MAVLINK_STATUS_FLAG_OUT_MAVLINK1
+        if (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) {
+           // cope with extensions
+           memset(MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN + (char *)&packet1, 0, sizeof(packet1)-MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN);
+        }
+#endif
+	mavlink_msg_mission_item_send(MAVLINK_COMM_0 , packet1.target_system , packet1.target_component , packet1.seq , packet1.frame , packet1.command , packet1.current , packet1.autocontinue , packet1.param1 , packet1.param2 , packet1.param3 , packet1.param4 , packet1.x , packet1.y , packet1.z , packet1.mission_type );
+
+
+}
+
+
+typedef struct __coord_t {
+ float latitude;  
+ float longitude; 
+ float altitude;
+} coord_t;
+ coord_t coord_gloable;
+
+ void waypoint_test()
+{
+	mavlink_mission_item_t msg_temp[10];//建议做局部变量
+	u8 seq_cnt=0;
+	coord_gloable.altitude  =		22.5731620 ;					//				float x, 
+	coord_gloable.longitude =		113.5783691;				//				float y, 
+	coord_gloable.altitude  =		25.0000000 ;				//				float z
+	item_pack( &msg_temp[seq_cnt],
+				seq_cnt, 
+				MAV_CMD_NAV_WAYPOINT,					//				uint16_t command, 
+				0,					//				float param1, 
+				0,					//				float param2, 
+				0,					//				float param3, 
+				0,					//				float param4, 
+		coord_gloable.altitude	, 				//				float x, 
+		coord_gloable.longitude ,				//				float y, 
+		coord_gloable.altitude						//				float z
+				);
+	seq_cnt++;
+	item_pack( &msg_temp[seq_cnt],
+				seq_cnt, 
+				MAV_CMD_NAV_WAYPOINT,					//				uint16_t command, 
+				0,					//				float param1, 
+				0,					//				float param2, 
+				0,					//				float param3, 
+				0,					//				float param4, 
+				22.5730420,					//				float x, 
+				113.57822241,				//				float y, 
+				25.0000000					//				float z
+				);
+	seq_cnt++;
+
+				mavlink_mission_count_t packet;
+				packet.count = seq_cnt;
+				packet.target_system = 1;
+				packet.target_component = 190;
+				packet.mission_type = 0;
+				_mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_MISSION_COUNT, (const char *)&packet, MAVLINK_MSG_ID_MISSION_COUNT_MIN_LEN, MAVLINK_MSG_ID_MISSION_COUNT_LEN, MAVLINK_MSG_ID_MISSION_COUNT_CRC);
+
+				
+for ( u8 i = 0 ; i <seq_cnt ; i++ )
+{
+	_mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_MISSION_ITEM, (const char *)&msg_temp[i], MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN, MAVLINK_MSG_ID_MISSION_ITEM_LEN, MAVLINK_MSG_ID_MISSION_ITEM_CRC);
+}
+
+				
 }
 

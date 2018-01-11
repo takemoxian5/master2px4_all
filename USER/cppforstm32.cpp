@@ -46,22 +46,3 @@ void operator delete[](void * pointer)
   operator delete(pointer);
 }
 #endif //DYNAMIC_MEMORY
-
-//!@code printf link functions
-#ifdef __cplusplus
-extern "C"
-{
-#endif //__cplusplus
-//int fputc(int ch, FILE *f)
-//PUTCHAR_PROTOTYPE
-//{
-//  while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET)
-//    ;
-//  USART_SendData(USART1, (unsigned char) ch);
-
-//  return (ch);
-//}
-#ifdef __cplusplus
-}
-#endif //__cplusplus
-//!@endcode printf link fuctions.

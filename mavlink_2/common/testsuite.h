@@ -1651,7 +1651,7 @@ static void mavlink_test_mission_item(uint8_t system_id, uint8_t component_id, m
 //			18691,18795,101,168,235,46,113,180
 			  0,0,0,0,
 				22.5731620,113.5783691,25.0000000,
-				0,16,1,190,3,1,1,0
+				0,16,1,190,3,0,1,0
     };
     mavlink_mission_item_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
@@ -1713,7 +1713,7 @@ mavlink_mission_item_t packet3 = {
 			  0,0,0,0,
 				22.5730420,113.57822241,25.0000000,
 //				2,16,0,1,190,1,1,1
-				1,16,1,190,3,0,1,0
+				1,16,1,190,3,1,1,0
     };
 memset(&packet1, 0, sizeof(packet1));
 packet1 =packet3;

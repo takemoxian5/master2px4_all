@@ -17,9 +17,7 @@ uint8_t uart_tx_buf[UART_TX_BUFFER_SIZE], uart_rx_buf[UART_RX_BUFFER_SIZE];
 ////////////////////////////////////////////////////////////////////
 //加入以下代码,支持printf函数,而不需要选择use MicroLIB
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 #if 0   //1正常设计接口，USART2为remote ,USART3为px4_link
 #define USART_USER1_IRQHandler void USART2_IRQHandler(void)
 #define USART_USER2_IRQHandler void USART3_IRQHandler(void)
@@ -45,6 +43,10 @@ extern "C" {
 #if 1
 #pragma import(__use_no_semihosting)
 //标准库需要的支持函数
+void _sys_exit(int x)
+{
+    x = x;
+}
 struct __FILE
 {
     int handle;
@@ -52,10 +54,7 @@ struct __FILE
 
 FILE __stdout;
 //定义_sys_exit()以避免使用半主机模式
-void _sys_exit(int x)
-{
-    x = x;
-}
+
 //重定义fputc函数
 int fputc(int ch, FILE *f)
 {
@@ -87,7 +86,9 @@ int fputc(int ch, FILE *f)
 //  return (ch);
 //}
 #endif
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 /* Private functions ---------------------------------------------------------*/
 
 void USART1_Gpio_Config(void)
@@ -264,7 +265,7 @@ void UART_send_byte(uint8_t byte)                           //发送1字节数�
 }
 void comm_send_ch(mavlink_channel_t chan, uint8_t ch)
 {
-	if (chan == MAVLINK_COMM_0)
+//	if (chan == MAVLINK_COMM_0)
     UART_send_byte(ch);
 //    if (chan == MAVLINK_COMM_0)
 //    {

@@ -18,6 +18,7 @@
 //#include "mavlink.h"
 #include "OpenTel_Mavlink.h"
 #include "testsuite.h"
+#include "MissionAPI.h"	
 
 //#include "cppforstm32.h"
 #ifdef __cplusplus
@@ -103,8 +104,8 @@ int main(void)
     
     printf("STM32F4Discovery Board initialization finished!\r\n");
 
-    mavlink_system.sysid =1;//MAV_TYPE_GCS;// MAV_TYPE_GCS=6地面站角色 MAV_TYPE_FIXED_WING;//MAV_TYPE_GENERIC;
-    mavlink_system.compid =190;//MAV_AUTOPILOT_GENERIC;//=0
+    mavlink_system.sysid =6;//MAV_TYPE_GCS;// MAV_TYPE_GCS=6地面站角色 MAV_TYPE_FIXED_WING;//MAV_TYPE_GENERIC;
+    mavlink_system.compid =0;//MAV_AUTOPILOT_GENERIC;//=0
 	mavlink_servo_output_raw_t* servo_output_raw;
 	servo_output_raw->time_usec = 20000000;
 	servo_output_raw->servo1_raw = 950;
@@ -275,8 +276,12 @@ uint8_t            system_id=6,component_id= 0;
 
 //mavlink_test_set_mode(system_id, component_id, last_msg);
 
-			mavlink_test_mission_count(system_id, component_id, last_msg);
-			mavlink_test_mission_item(system_id, component_id, last_msg);
+//			mavlink_test_mission_count(system_id, component_id, last_msg);
+//			mavlink_test_mission_item(system_id, component_id, last_msg);
+waypoint_test();
+
+
+
 //	mavlink_test_mission_request_partial_list(system_id, component_id, last_msg);
 //    mavlink_test_mission_write_partial_list(system_id, component_id, last_msg);
 //    mavlink_test_mission_item(system_id, component_id, last_msg);

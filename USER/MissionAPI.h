@@ -2,6 +2,8 @@
 #define _MISSIONAPI_H_
 
 #include "stm32f4xx.h"
+
+
 void Loop_check(void);
 
 void Duty_Loop(void);
@@ -31,6 +33,8 @@ typedef struct
 
 
 
+
+ void waypoint_test();
 
 
 
