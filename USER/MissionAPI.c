@@ -10,6 +10,8 @@ s16 loop_cnt;
 
 
 loop_t loop;
+u8  gc_target_system=1;
+u8  gc_target_component=190;
 
 void Loop_check()  //TIME INTTERRUPT
 {
@@ -135,100 +137,6 @@ void Duty_Loop()                    //最短任务周期为1ms，总的代码执
 
         loop.check_flag = 0;        //循环运行完毕标志
     }
-}
-
-
-
-void remote_update(void)
-{
-    if (myReceiver.cmdReadyFlag == 1)
-    {
-        myReceiver.cmdReadyFlag = 0;
-    }
-    else
-    {
-        // No full command has been received yet.
-        return;
-    }
-    cnt++;
-    if ((myReceiver.cmdIn[0] != 0xFA) || (myReceiver.cmdIn[1] != 0xFB))
-    {
-        if(cnt>1)
-        {
-            cnt=0;
-        }
-    }
-    switch(myReceiver.cmdIn[2])
-    {
-        case 0x05:           //飞控状态传送
-//            if(api->getBroadcastData().status==2)
-//            {
-//                if(startState==0)
-//                {
-//                    if(api->getBroadcastData().pos.health>3)
-//                    {
-//                        startState  = 1;
-//                        startlatitude = api->getBroadcastData().pos.latitude;
-//                        startlongitude = api->getBroadcastData().pos.longitude;
-//                    }
-//                }
-//            }else{
-//                startState  = 0;
-//            }
-//            f32Distance=f64Distance = get_distance(startlatitude,startlongitude,\
-//                                     api->getBroadcastData().pos.latitude,\
-//                                     api->getBroadcastData().pos.longitude);
-//
-//          f32Height = api->getBroadcastData().pos.height;
-//            planeSpeed.x = api->getBroadcastData().v.x;
-//            planeSpeed.y = api->getBroadcastData().v.y;
-//            planeSpeed.z = api->getBroadcastData().v.z;
-//            Health = api->getBroadcastData().pos.health;
-//
-//            arm_sqrt_f32(planeSpeed.x*planeSpeed.x+planeSpeed.y*planeSpeed.y , &f32Dspeed);
-//            f32Hspeed = planeSpeed.z;
-//            if(f32Height<0)f32Height = -f32Height;
-//            u16Height = (uint16_t)(f32Height*100);//mm
-//            u32Distance =(uint32_t)(f32Distance*10);//dm
-//            u16Distance = (uint16_t)u32Distance;
-//
-//            u16Dspeed = (uint16_t)(f32Dspeed*10);   //m/s
-//            s8Hspeed  = (int8_t)(f32Hspeed*10);     //m/s
-            receiverPutChar(0xfa);
-            size=10;
-            sendBuf[0] = size;
-            sendBuf[1] = type;
-            memcpy(&sendBuf[2],&u16Height,2);
-            memcpy(&sendBuf[4],&u16Distance,2);
-            memcpy(&sendBuf[6],&u16Dspeed,2);
-            memcpy(&sendBuf[8],&s8Hspeed,1);
-            memcpy(&sendBuf[9],&Health,1);
-            receiverSend(sendBuf,10);
-            receiverPutChar(0xfe);
-            break;
-        case 0x06:
-            break;
-        case 0x07:
-            break;
-        case 0x08:
-            break;
-        case 0x09:
-            break;
-        default:
-            break;
-    }
-#if 1//def Add_remote_debug
-    u8 i=0;
-    {
-        printf("Test_data ===");
-
-        for (i = 1; i < myReceiver.rxLength-1; i++)
-        {
-            printf("%02x",myReceiver.cmdIn[i]);
-        }
-        printf("\r\n");
-    }
-#endif
 }
 
 
@@ -573,25 +481,21 @@ void polygon_to_NED()
 #endif  //end of MAV_LOG_TSET
 float gfAltitude=25.0000000;//全局变量，待移至 include
 #define  WAYPOINT_SIZE  10
-#define  ABWAYPOINT_SIZE  10
+#define  ABWAYPOINT_SIZE  50
+#define  ABWAYPOINT_PLUS  100
 
 
 
 /***************************************************************************
   Function:          coord_set
   Description:       功能函数，简化代码
-  Input:             float altitude       //$
-                     float longitude      //$
+  Input:             float altitude       //send count
+                     float longitude      //send count
   Output:            void
-  Return:            coord_t    //$
+  Return:            coord_t    //send count
   Others:            none
 ****************************************************************************/
-#if 1
 coord_t coord_set(double latitude,double longitude)
-#else
-
-coord_t coord_set(float latitude,float longitude)
-#endif
 {
     coord_t coord_temp;
     coord_temp.latitude  =      latitude;               //              float x,
@@ -599,158 +503,148 @@ coord_t coord_set(float latitude,float longitude)
     coord_temp.altitude  =      gfAltitude;             //              float z
     return coord_temp;
 }
-/***************************************************************************
-  Function:          polygon_set_AB
-  Description:       $
-  Input:             coord_t coord_A      //$
-                     coord_t coord_B      //$
-                     bool direction       //0 left  1  right
-  Output:            void
-  Return:            void
-  Others:            none
-****************************************************************************/
-void polygon_set_AB(coord_t coord_A, coord_t coord_B,bool direction)
-{
-	{
-		mavlink_mission_item_t msg_temp[ABWAYPOINT_SIZE];//建议做局部变量
-		u8 seq_cnt=0;
-		coord_t coord_temp[ABWAYPOINT_SIZE];
-		coordNed_t grid_distance,grid_dist_vert,grid_distance_op;
-//		coordNed_t grid_points[ABWAYPOINT_SIZE];
-		u8 i;
-		float grid_angle;
-		u8 grid_space=6; //喷洒间距
-	//	  coord_temp[0]=coord_set(22.5730988,113.5782881); //A
-	//	  coord_temp[1]=coord_set(22.5733928,113.5779696); //B
-	//	  coord_temp[2]=coord_set(22.5734273,113.5780150); //B1
-	//	grid_distance=convertGeoToNed(coord_temp[0], coord_temp[1]);
-//		coord_A=coord_set(22.5730988,113.5782881); //A
-//		coord_B=coord_set(22.5733928,113.5779696); //B
-		grid_distance=convertGeoToNed(coord_A, coord_B);
-		grid_angle = (atan2(grid_distance.y, grid_distance.x) * M_RAD_TO_DEG);
-		printf("grid_angle==%f \r\n",grid_angle);
-		grid_dist_vert.x=grid_space*cos((grid_angle-90)*M_DEG_TO_RAD);
-		grid_dist_vert.y=grid_space*sin((grid_angle-90)*M_DEG_TO_RAD);
-//		grid_dist_vert_op.x=-grid_dist_vert.x;
-//		grid_dist_vert_op.y=-grid_dist_vert.y;
-if(direction==0)  //左边
-{
-		grid_dist_vert.x=-grid_dist_vert.x;
-		grid_dist_vert.y=-grid_dist_vert.y;
-}
-		grid_distance_op.x=-grid_distance.x;
-		grid_distance_op.y=-grid_distance.y;
-		printf("grid_dist_vertx==%f,grid_dist_verty==%f ,grid_dist_verty==%f\r\n",grid_dist_vert.x,grid_dist_vert.y,grid_dist_vert.z);
+
+//发送一些控制 和状态切换命令，  举例如下
 #if 0
-		grid_points[1]=grid_distance; //B 点，以A 为起点的绝对坐标
-		for (  i = 2 ; i <ABWAYPOINT_SIZE ; i++ )
+MAV_CMD_NAV_TAKEOFF=22
+
+#endif
+	void send_one_cmd_long(mavlink_command_long_t* msg, uint16_t command,  
+	uint8_t confirmation,  // 0 first tansmission of this
+	float param1, float param2, float param3, float param4, float param5, float param6, float param7)
 	{
-			 switch (i%4)
-		{
-		  case 0: //v+
-		  //奇数点
-				{
-				grid_points[i].x=grid_points[i-1].x+grid_dist_vert.x;
-				grid_points[i].y=grid_points[i-1].y+grid_dist_vert.y;
-					  break;
-				}
-		  case 1: //d+
-				{
-				grid_points[i].x=grid_points[i-1].x+grid_distance.x;	
-				grid_points[i].y=grid_points[i-1].y+grid_distance.y;
-					  break;
-				}
-		  case 2:  // v+
-				{
-				grid_points[i].x=grid_points[i-1].x+grid_dist_vert.x;
-				grid_points[i].y=grid_points[i-1].y+grid_dist_vert.y;
-					  break;
-				}
-		  case 3:  //d-
-				{
-				grid_points[i].x=grid_points[i-1].x-grid_distance.x;	
-				grid_points[i].y=grid_points[i-1].y-grid_distance.y;
-					  break;
-				}
-		}
-	 printf("grid_pointx==%f,grid_pointy==%f ,grid_pointz==%f\r\n",grid_points[i].x,grid_points[i].y,grid_points[i].z);
-			 
+		mavlink_command_long_t packet1;
+		memset(&packet1, 0, sizeof(packet1));
+		packet1.param1 =  param1;
+		packet1.param2 =  param2;
+		packet1.param3 =  param3;
+		packet1.param4 =  param4;
+		packet1.param5 =  param5;
+		packet1.param6 =  param6;
+		packet1.param7 =  param7;
+		packet1.command = command;
+		packet1.target_system = gc_target_system;
+		packet1.target_component = gc_target_component;
+		packet1.confirmation = confirmation;
+		//    packet->param1 = param1;
+//    packet.param2 = param2;
+//    packet.param3 = param3;
+//    packet.param4 = param4;
+//    packet.x = x;
+//    packet.y = y;
+//    packet.z = z;
+//    packet.seq = seq;
+//    packet.command = command;
+//    packet.target_system = 1;
+//    packet.target_component = 190;
+//    packet.frame = command ==MAV_CMD_NAV_WAYPOINT ? 3:2;  //global_relative=3 ,mission=2
+//  packet.current = seq ==0? 1:0;  //set current at first point              //G201801111281 ChenYang
+//    packet.autocontinue = true;
+//    packet.mission_type = 0;
+		_mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_COMMAND_LONG, (const char *)&packet1, MAVLINK_MSG_ID_COMMAND_LONG_MIN_LEN, MAVLINK_MSG_ID_COMMAND_LONG_LEN, MAVLINK_MSG_ID_COMMAND_LONG_CRC);
+
 	}
-#endif  //end of MAV_LOG_TSET
-	// transfer geo
-		coord_temp[0]=coord_A;
-		coord_temp[1]=coord_B;
-			for (  i = 2 ; i <ABWAYPOINT_SIZE ; i++ )
-	{
-			 switch (i%4)
-		{
-		  case 0: //v+
-		  //奇数点
-				{
-			  coord_temp[i]=convertNedToGeo(coord_temp[i-1],grid_dist_vert);
-					  break;
-				}
-		  case 1: //d+
-				{
-				coord_temp[i]=convertNedToGeo(coord_temp[i-1],grid_distance);
-					  break;
-				}
-		  case 2:  // v+
-				{
-				coord_temp[i]=convertNedToGeo(coord_temp[i-1],grid_dist_vert);
-	//			grid_points[i].x=grid_points[i-1].x+grid_dist_vert.x;
-	//			grid_points[i].y=grid_points[i-1].y+grid_dist_vert.y;
-					  break;
-				}
-		  case 3:  //d-
-				{
-				coord_temp[i]=convertNedToGeo(coord_temp[i-1],grid_distance_op);
-				 break;
-				}
-		}
-	 printf("coord_tempx==%f,coord_tempy==%f ,coord_tempz==%f\r\n",coord_temp[i].latitude,coord_temp[i].longitude,coord_temp[i].altitude);
-	
-	}
-	
-	
-			for (  i = 0; i <ABWAYPOINT_SIZE ; i++ )
-	
-	{
-			item_pack( &msg_temp[seq_cnt],
+
+void send_one_Waypoint(u8 seq_cnt,coord_t coord_temp)
+{
+	mavlink_mission_item_t packet_item;
+			   item_pack( &packet_item,
 					   seq_cnt,
 					   MAV_CMD_NAV_WAYPOINT,				   //			   uint16_t command,
 					   0,				   //			   float param1,
 					   0,				   //			   float param2,
 					   0,				   //			   float param3,
 					   0,				   //			   float param4,   angle,只设置第一点即可
-					   coord_temp[i].latitude,					   //			   float x,
-					   coord_temp[i].longitude, 				   //			   float y,
-					   coord_temp[i].altitude					   //			   float z
+					   coord_temp.latitude,					   //			   float x,
+					   coord_temp.longitude, 				   //			   float y,
+					   coord_temp.altitude					   //			   float z
 					 );
-			seq_cnt++;	 
-	}
-	
-	//Start G2018011113141 CY128  $send item
-		mavlink_mission_count_t packet;
-		packet.count = seq_cnt;
-		packet.target_system = 1;
-		packet.target_component = 190;
-		packet.mission_type = 0;
-		_mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_MISSION_COUNT, (const char *)&packet, MAVLINK_MSG_ID_MISSION_COUNT_MIN_LEN, MAVLINK_MSG_ID_MISSION_COUNT_LEN, MAVLINK_MSG_ID_MISSION_COUNT_CRC);
-		for (  i = 0 ; i <seq_cnt ; i++ )
-		{
-			_mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_MISSION_ITEM, (const char *)&msg_temp[i], MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN, MAVLINK_MSG_ID_MISSION_ITEM_LEN, MAVLINK_MSG_ID_MISSION_ITEM_CRC);
-		}
-	//End G2018011113141 CY128
-	
-	
-	}
-
-
-
+	_mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_MISSION_ITEM, (const char *)&packet_item, MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN, MAVLINK_MSG_ID_MISSION_ITEM_LEN, MAVLINK_MSG_ID_MISSION_ITEM_CRC);
 }
-
 //#define outmsg3(str,x,y,z) printf("%s==%f,==%f ,==%f\r\n",x,y,z)
+ /***************************************************************************
+   Function:		  polygon_set_AB
+   Description: 	  send count
+   Input:			  coord_t coord_A	   //send count
+					  coord_t coord_B	   //send count
+					  bool direction	   //0 left  1	right
+   Output:			  void
+   Return:			  void
+   Others:			  none
+ ****************************************************************************/
+ void polygon_set_AB(coord_t coord_A, coord_t coord_B,bool direction)
+ {
+		 mavlink_mission_item_t msg_temp[4];//建议做局部变量
+		 u8 seq_cnt=0;
+		 coord_t coord_temp[4];
+		 coordNed_t grid_distance,grid_dist_vert,grid_distance_op;
+		 u8 i;
+		 float grid_angle;
+		 u8 grid_space=6; //喷洒间距
+		 grid_distance=convertGeoToNed(coord_A, coord_B);
+		 grid_angle = (atan2(grid_distance.y, grid_distance.x) * M_RAD_TO_DEG);
+		 printf("grid_angle==%f \r\n",grid_angle);
+		 grid_dist_vert.x=grid_space*cos((grid_angle-90)*M_DEG_TO_RAD);
+		 grid_dist_vert.y=grid_space*sin((grid_angle-90)*M_DEG_TO_RAD);
+ if(direction==0)  //左边
+ {
+		 grid_dist_vert.x=-grid_dist_vert.x;
+		 grid_dist_vert.y=-grid_dist_vert.y;
+ }
+		 grid_distance_op.x=-grid_distance.x;
+		 grid_distance_op.y=-grid_distance.y;
+		 printf("grid_dist_vertx==%f,grid_dist_verty==%f ,grid_dist_verty==%f\r\n",grid_dist_vert.x,grid_dist_vert.y,grid_dist_vert.z);
+	 // transfer geo
+		 coord_temp[0]=coord_A;
+		 coord_temp[1]=coord_B;
+
+
+//Start G2018011213141 CY128  send count
+		 mavlink_mission_count_t packet;
+				  packet.count = ABWAYPOINT_PLUS;
+				  packet.target_system = 1;
+				  packet.target_component = 190;
+				  packet.mission_type = 0;
+				  _mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_MISSION_COUNT, (const char *)&packet, MAVLINK_MSG_ID_MISSION_COUNT_MIN_LEN, MAVLINK_MSG_ID_MISSION_COUNT_LEN, MAVLINK_MSG_ID_MISSION_COUNT_CRC);
+//End G2018011213141 CY128 
+				  coord_temp[0]=coord_A;
+				  coord_temp[1]=coord_B;
+
+		  send_one_Waypoint(seq_cnt++,coord_A);
+		  send_one_Waypoint(seq_cnt++,coord_B);
+
+	 
+	  for (	i = 2 ; i <ABWAYPOINT_PLUS ; i++ )
+	 {
+			  switch (i%4)
+		 {
+		   case 0: //v+
+		   //奇数点
+				 {
+			   coord_temp[i%4]=convertNedToGeo(coord_temp[(i+3)%4],grid_dist_vert);
+					   break;
+				 }
+		   case 1: //d+
+				 {
+				 coord_temp[i%4]=convertNedToGeo(coord_temp[(i+3)%4],grid_distance);
+					   break;
+				 }
+		   case 2:	// v+
+				 {
+				 coord_temp[i%4]=convertNedToGeo(coord_temp[(i+3)%4],grid_dist_vert);
+					   break;
+				 }
+		   case 3:	//d-
+				 {
+				 coord_temp[i%4]=convertNedToGeo(coord_temp[(i+3)%4],grid_distance_op);
+				  break;
+				 }
+		 }
+ //   printf("coord_tempx==%f,coord_tempy==%f ,coord_tempz==%f\r\n",coord_temp[i].latitude,coord_temp[i].longitude,coord_temp[i].altitude);
+	 send_one_Waypoint(seq_cnt++,coord_temp[i%4]);
+	 }
+ 
+ }
 
  void waypoint_test()
 {
@@ -760,158 +654,98 @@ if(direction==0)  //左边
 	polygon_set_AB(  coord_A,  coord_B, 0);
 
 }
- #if 0
-{
-    mavlink_mission_item_t msg_temp[WAYPOINT_SIZE];//建议做局部变量
-    u8 seq_cnt=0;
-    coord_t coord_temp[WAYPOINT_SIZE];
-    coordNed_t grid_distance,grid_dist_vert,grid_dist_vert_op,grid_distance_op;
-    coordNed_t grid_points[WAYPOINT_SIZE];
-    coord_t coord_distance2;
-    u8 i,j;
-    u8 WayPointCnt=0;
-    float grid_angle;
-	coord_t coord_A,coord_B;
-	u8 grid_space=6; //喷洒间距
-	bool direction=1; //右侧
-//    coord_temp[0]=coord_set(22.5730988,113.5782881); //A
-//    coord_temp[1]=coord_set(22.5733928,113.5779696); //B
-//    coord_temp[2]=coord_set(22.5734273,113.5780150); //B1
-//	grid_distance=convertGeoToNed(coord_temp[0], coord_temp[1]);
-
-	coord_A=coord_set(22.5730988,113.5782881); //A
-	coord_B=coord_set(22.5733928,113.5779696); //B
-    grid_distance=convertGeoToNed(coord_A, coord_B);
-    grid_angle = (atan2(grid_distance.y, grid_distance.x) * M_RAD_TO_DEG);
-    printf("grid_angle==%f \r\n",grid_angle);
-	grid_dist_vert.x=grid_space*cos((grid_angle-90)*M_DEG_TO_RAD);
-	grid_dist_vert.y=grid_space*sin((grid_angle-90)*M_DEG_TO_RAD);
-	grid_dist_vert_op.x=-grid_dist_vert.x;
-	grid_dist_vert_op.y=-grid_dist_vert.y;
-	grid_distance_op.x=-grid_distance.x;
-	grid_distance_op.y=-grid_distance.y;
-	printf("grid_dist_vertx==%f,grid_dist_verty==%f ,grid_dist_verty==%f\r\n",grid_dist_vert.x,grid_dist_vert.y,grid_dist_vert.z);
-
-	grid_points[1]=grid_distance; //B 点，以A 为起点的绝对坐标
-
-	for (  i = 2 ; i <10 ; i++ )
-{
-		 switch (i%4)
-	{
-	  case 0: //v+
-	  //奇数点
-			{
-			grid_points[i].x=grid_points[i-1].x+grid_dist_vert.x;
-			grid_points[i].y=grid_points[i-1].y+grid_dist_vert.y;
-				  break;
-			}
-	  case 1: //d+
-			{
-			grid_points[i].x=grid_points[i-1].x+grid_distance.x;	
-			grid_points[i].y=grid_points[i-1].y+grid_distance.y;
-				  break;
-			}
-	  case 2:  // v+
-			{
-			grid_points[i].x=grid_points[i-1].x+grid_dist_vert.x;
-			grid_points[i].y=grid_points[i-1].y+grid_dist_vert.y;
-				  break;
-			}
-	  case 3:  //d-
-			{
-			grid_points[i].x=grid_points[i-1].x-grid_distance.x;	
-			grid_points[i].y=grid_points[i-1].y-grid_distance.y;
-				  break;
-			}
-	}
- printf("grid_pointx==%f,grid_pointy==%f ,grid_pointz==%f\r\n",grid_points[i].x,grid_points[i].y,grid_points[i].z);
-		 
-}
-// transfer geo
-	coord_temp[0]=coord_A;
-	coord_temp[1]=coord_B;
-		for (  i = 2 ; i <10 ; i++ )
-{
-		 switch (i%4)
-	{
-	  case 0: //v+
-	  //奇数点
-			{
-		  coord_temp[i]=convertNedToGeo(coord_temp[i-1],grid_dist_vert);
-				  break;
-			}
-	  case 1: //d+
-			{
-			coord_temp[i]=convertNedToGeo(coord_temp[i-1],grid_distance);
-				  break;
-			}
-	  case 2:  // v+
-			{
-			coord_temp[i]=convertNedToGeo(coord_temp[i-1],grid_dist_vert);
-//			grid_points[i].x=grid_points[i-1].x+grid_dist_vert.x;
-//			grid_points[i].y=grid_points[i-1].y+grid_dist_vert.y;
-				  break;
-			}
-	  case 3:  //d-
-			{
-			coord_temp[i]=convertNedToGeo(coord_temp[i-1],grid_distance_op);
+ 
+ void remote_update(void)
+ {
+	 if (myReceiver.cmdReadyFlag == 1)
+	 {
+		 myReceiver.cmdReadyFlag = 0;
+	 }
+	 else
+	 {
+		 // No full command has been received yet.
+		 return;
+	 }
+	 cnt++;
+	 if ((myReceiver.cmdIn[0] != 0xFA) || (myReceiver.cmdIn[1] != 0xFB))
+	 {
+		 if(cnt>1)
+		 {
+			 cnt=0;
+		 }
+	 }
+	 switch(myReceiver.cmdIn[2])
+	 {
+		 case 0x05: 		  //飞控状态传送
+ // 		   if(api->getBroadcastData().status==2)
+ // 		   {
+ // 			   if(startState==0)
+ // 			   {
+ // 				   if(api->getBroadcastData().pos.health>3)
+ // 				   {
+ // 					   startState  = 1;
+ // 					   startlatitude = api->getBroadcastData().pos.latitude;
+ // 					   startlongitude = api->getBroadcastData().pos.longitude;
+ // 				   }
+ // 			   }
+ // 		   }else{
+ // 			   startState  = 0;
+ // 		   }
+ // 		   f32Distance=f64Distance = get_distance(startlatitude,startlongitude,\
+ // 									api->getBroadcastData().pos.latitude,\
+ // 									api->getBroadcastData().pos.longitude);
+ //
+ // 		 f32Height = api->getBroadcastData().pos.height;
+ // 		   planeSpeed.x = api->getBroadcastData().v.x;
+ // 		   planeSpeed.y = api->getBroadcastData().v.y;
+ // 		   planeSpeed.z = api->getBroadcastData().v.z;
+ // 		   Health = api->getBroadcastData().pos.health;
+ //
+ // 		   arm_sqrt_f32(planeSpeed.x*planeSpeed.x+planeSpeed.y*planeSpeed.y , &f32Dspeed);
+ // 		   f32Hspeed = planeSpeed.z;
+ // 		   if(f32Height<0)f32Height = -f32Height;
+ // 		   u16Height = (uint16_t)(f32Height*100);//mm
+ // 		   u32Distance =(uint32_t)(f32Distance*10);//dm
+ // 		   u16Distance = (uint16_t)u32Distance;
+ //
+ // 		   u16Dspeed = (uint16_t)(f32Dspeed*10);   //m/s
+ // 		   s8Hspeed  = (int8_t)(f32Hspeed*10);	   //m/s
+			 receiverPutChar(0xfa);
+			 size=10;
+			 sendBuf[0] = size;
+			 sendBuf[1] = type;
+			 memcpy(&sendBuf[2],&u16Height,2);
+			 memcpy(&sendBuf[4],&u16Distance,2);
+			 memcpy(&sendBuf[6],&u16Dspeed,2);
+			 memcpy(&sendBuf[8],&s8Hspeed,1);
+			 memcpy(&sendBuf[9],&Health,1);
+			 receiverSend(sendBuf,10);
+			 receiverPutChar(0xfe);
 			 break;
-			}
-	}
- printf("coord_tempx==%f,coord_tempy==%f ,coord_tempz==%f\r\n",coord_temp[i].latitude,coord_temp[i].longitude,coord_temp[i].altitude);
-
-}
-
-
-
-		for (  i = 0; i <10 ; i++ )
-
-{
-		item_pack( &msg_temp[seq_cnt],
-				   seq_cnt,
-				   MAV_CMD_NAV_WAYPOINT,				   //			   uint16_t command,
-				   0,				   //			   float param1,
-				   0,				   //			   float param2,
-				   0,				   //			   float param3,
-				   0,				   //			   float param4,   angle,只设置第一点即可
-				   coord_temp[i].latitude,					   //			   float x,
-				   coord_temp[i].longitude, 				   //			   float y,
-				   coord_temp[i].altitude					   //			   float z
-				 );
-		seq_cnt++;	 
-}
-
-
+		 case 0x06:
+			 break;
+		 case 0x07:
+			 break;
+		 case 0x08:
+			 break;
+		 case 0x09:
+			 break;
+		 default:
+			 break;
+	 }
+#if 1//def Add_remote_debug
+	 u8 i=0;
+	 {
+		 printf("Test_data ===");
+ 
+		 for (i = 1; i < myReceiver.rxLength-1; i++)
+		 {
+			 printf("%02x",myReceiver.cmdIn[i]);
+		 }
+		 printf("\r\n");
+	 }
+#endif
+ }
 
 
-//    item_pack( &msg_temp[seq_cnt],
-//               seq_cnt,
-//               MAV_CMD_NAV_WAYPOINT,                   //              uint16_t command,
-//               0,                  //              float param1,
-//               0,                  //              float param2,
-//               0,                  //              float param3,
-//               0,                  //              float param4,   angle,只设置第一点即可
-//               coord_gloable.altitude,                     //              float x,
-//               coord_gloable.longitude,                    //              float y,
-//               coord_gloable.altitude                      //              float z
-//             );
-//    seq_cnt++;
-
-
-//Start G2018011113141 CY128  $send item
-    mavlink_mission_count_t packet;
-    packet.count = seq_cnt;
-    packet.target_system = 1;
-    packet.target_component = 190;
-    packet.mission_type = 0;
-    _mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_MISSION_COUNT, (const char *)&packet, MAVLINK_MSG_ID_MISSION_COUNT_MIN_LEN, MAVLINK_MSG_ID_MISSION_COUNT_LEN, MAVLINK_MSG_ID_MISSION_COUNT_CRC);
-    for (  i = 0 ; i <seq_cnt ; i++ )
-    {
-        _mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_MISSION_ITEM, (const char *)&msg_temp[i], MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN, MAVLINK_MSG_ID_MISSION_ITEM_LEN, MAVLINK_MSG_ID_MISSION_ITEM_CRC);
-    }
-//End G2018011113141 CY128
-
-
-}
-#endif  //end of MAV_LOG_TSET
 

@@ -154,15 +154,19 @@ int main(void)
 	set_position.z=0;
 	
 	com.target_system    = 1;
-	com.target_component = 0;
-	com.command          = MAV_CMD_COMPONENT_ARM_DISARM;
-	com.confirmation     = true;
-	com.param1           = 1; // flag >0.5 => start, <0.5 => stop
+	com.target_component = 190;
+	com.command          = MAV_CMD_DO_SET_SERVO;//MAV_CMD_COMPONENT_ARM_DISARM;
+	com.confirmation     = 0; //first
+	com.param1           = 4; // flag >0.5 => start, <0.5 => stop
+	com.param2           = 1314; // flag >0.5 => start, <0.5 => stop
 	
-	
-	set_mode.target_system=1;
-	set_mode.base_mode=MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-	set_mode.custom_mode=4;
+//	set_mode.target_system=1;
+//	set_mode.base_mode=MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+//	set_mode.custom_mode=4;
+		set_mode.custom_mode=4;
+		set_mode.target_system=1;
+		set_mode.base_mode=157;//MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+		
 
 	take_off_local.target_system=1;
 	take_off_local.target_component=0;
@@ -222,6 +226,8 @@ int main(void)
 			  mavlink_send_message(0, MSG_HEARTBEAT, 0);
 //			mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&com);
 //			mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&land);
+		mavlink_msg_set_mode_send_struct(MAVLINK_COMM_0,&set_mode);
+
 		//USART_SendData(USART2,a);
 		//while(USART_GetFlagStatus(USART2,USART_FLAG_TC)!=SET);//等待发送结束
 #if 0//def Add_remote
@@ -280,7 +286,7 @@ uint8_t            system_id=6,component_id= 0;
 //			mavlink_test_mission_item(system_id, component_id, last_msg);
 
 
-waypoint_test();
+//waypoint_test();
 
 
 

@@ -36,6 +36,13 @@ mavlink_vfr_hud_t           vfr_hud;
 mavlink_manual_control_t	manual_control;
 mavlink_sys_status_t		sys_status;
 mavlink_local_position_ned_t local_position_ned;
+mavlink_mission_count_t mission_count;
+mavlink_mission_set_current_t mission_set_current;
+mavlink_mission_current_t mission_current;
+
+mavlink_gps_raw_int_t gps_raw_int;
+mavlink_rc_channels_raw_t rc_channels_raw;
+mavlink_mission_item_int_t mission_item_int;
 
 uint8_t buf[100];
 //End Add By BigW
@@ -386,15 +393,15 @@ void handleMessage(mavlink_message_t* msg)
 //        }
         case MAVLINK_MSG_ID_VFR_HUD:
         {
-//            mavlink_msg_vfr_hud_decode(msg,&vfr_hud);
+            mavlink_msg_vfr_hud_decode(msg,&vfr_hud);
             break;
         }
 
-        case MAVLINK_MSG_ID_MANUAL_CONTROL:
-        {
-            mavlink_msg_manual_control_decode(msg, &manual_control);
-            break;
-        }
+//        case MAVLINK_MSG_ID_MANUAL_CONTROL:
+//        {
+//            mavlink_msg_manual_control_decode(msg, &manual_control);
+//            break;
+//        }
 		case MAVLINK_MSG_ID_SYS_STATUS:
         {
             mavlink_msg_sys_status_decode( msg, &sys_status);
@@ -405,9 +412,38 @@ void handleMessage(mavlink_message_t* msg)
             mavlink_msg_local_position_ned_decode( msg, &local_position_ned);
             break;
         }
+		case MAVLINK_MSG_ID_RC_CHANNELS:
+        {
+            mavlink_msg_rc_channels_raw_decode( msg, &rc_channels_raw);
+            break;
+        }
+		case MAVLINK_MSG_ID_MISSION_SET_CURRENT:
+        {
+            mavlink_msg_mission_set_current_decode( msg, &mission_set_current);
+            break;
+        } 
+		case MAVLINK_MSG_ID_MISSION_CURRENT:
+        {
+            mavlink_msg_mission_current_decode( msg, &mission_current);
+            break;
+        }
+		case MAVLINK_MSG_ID_MISSION_COUNT:
+        {
+            mavlink_msg_mission_count_decode( msg, &mission_count);
+            break;
+        }
+		case MAVLINK_MSG_ID_GPS_RAW_INT:
+        {
+            mavlink_msg_gps_raw_int_decode( msg, &gps_raw_int);
+            break;
+        }
+		case MAVLINK_MSG_ID_MISSION_ITEM_INT:
+			{
+				mavlink_msg_mission_item_int_decode( msg, &mission_item_int);
+				break;
+			}
 
-		
-        default:
+		default:
             break;
     }     // end switch
 

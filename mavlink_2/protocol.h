@@ -8,7 +8,7 @@
    you need to define NATIVE_BIG_ENDIAN
 */
 
-#define MAV_LOG_TSET
+#define MAV_LOG_TSET 1
 
 #ifdef NATIVE_BIG_ENDIAN
 # define MAVLINK_NEED_BYTE_SWAP (MAVLINK_ENDIAN == MAVLINK_LITTLE_ENDIAN)

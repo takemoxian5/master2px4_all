@@ -332,7 +332,7 @@ static inline void mavlink_msg_vfr_hud_decode(const mavlink_message_t* msg, mavl
     vfr_hud->throttle = mavlink_msg_vfr_hud_get_throttle(msg);
 	
 #else
-#ifdef MAV_LOG_TSET
+#if  MAV_LOG_TSET
 		printf("vfr_hud->heading===%d\r\n",vfr_hud->heading);
 #endif
 
