@@ -278,6 +278,8 @@ uint8_t            system_id=6,component_id= 0;
 
 //			mavlink_test_mission_count(system_id, component_id, last_msg);
 //			mavlink_test_mission_item(system_id, component_id, last_msg);
+
+
 waypoint_test();
 
 
