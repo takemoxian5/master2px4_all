@@ -433,58 +433,220 @@ packet1 =packet3;
 
 }
 
-
+//float 有效精度就7位，113.5782881为例至少10位精度，必须double 15~16位
 typedef struct __coord_t {
- float latitude;  
- float longitude; 
- float altitude;
+ double latitude;  
+ double longitude; 
+ double altitude;
 } coord_t;
  coord_t coord_gloable;
+ typedef struct __coord2_t {
+  float latitude;	
+  float longitude; 
+  float altitude;
+ } coord2_t;
+
+ typedef struct __coordNed_t {
+  float y;	  //latitude   南北向为y
+  float x; 		//longitude 东西向为x
+  float z;
+ } coordNed_t;
+
+
+
+ // These defines are private
+#ifndef M_PI
+#define M_PI (3.14159265358979323846)
+#endif
+#define M_DEG_TO_RAD (M_PI / 180.0)
+#define M_RAD_TO_DEG (180.0 / M_PI)
+#define CONSTANTS_ONE_G					9.80665f		/* m/s^2		*/
+#define CONSTANTS_AIR_DENSITY_SEA_LEVEL_15C		1.225f			/* kg/m^3		*/
+#define CONSTANTS_AIR_GAS_CONST				287.1f 			/* J/(kg * K)		*/
+#define CONSTANTS_ABSOLUTE_NULL_CELSIUS			-273.15f		/* °C			*/
+#define CONSTANTS_RADIUS_OF_EARTH			6371000			/* meters (m)		*/
+
+
+#define epsilon 0.00000001   //精度
+
+coord_t convertNedToGeo( coord_t origin,coord2_t distance
+// , double* x, double* y, double* z
+ ) 
+ {
+ coord_t coord_temp;
+	 double x_rad = distance.latitude / CONSTANTS_RADIUS_OF_EARTH;
+	 double y_rad = distance.longitude / CONSTANTS_RADIUS_OF_EARTH;
+	 double c = sqrtf(x_rad * x_rad + y_rad * y_rad);
+	 double sin_c = sin(c);
+	 double cos_c = cos(c);
+ 
+	 double ref_lon_rad = origin.longitude * M_DEG_TO_RAD;
+	 double ref_lat_rad = origin.latitude * M_DEG_TO_RAD;
+ 
+	 double ref_sin_lat = sin(ref_lat_rad);
+	 double ref_cos_lat = cos(ref_lat_rad);
+ 
+	 double lat_rad;
+	 double lon_rad;
+ 	 printf("c=====%f",c);
+	 if (fabs(c) > epsilon) 
+	 	{
+		 lat_rad = asin(cos_c * ref_sin_lat + (x_rad * sin_c * ref_cos_lat) / c);
+		 lon_rad = (ref_lon_rad + atan2(y_rad * sin_c, c * ref_cos_lat * cos_c - x_rad * ref_sin_lat * sin_c));
+ 
+	 } 
+	 else {
+		 lat_rad = ref_lat_rad;
+		 lon_rad = ref_lon_rad;
+	 }
+
+	 coord_temp.latitude = lat_rad * M_RAD_TO_DEG;
+	 coord_temp.longitude =lon_rad * M_RAD_TO_DEG;
+	 coord_temp.altitude= -distance.altitude + origin.altitude;
+	 return coord_temp;
+ }
+
+ coord2_t convertGeoToNed(coord_t origin ,coord_t coord    //左边参考起点，右边当前点
+// , double* x, double* y, double* z
+ ) 
+ {
+ 	coord2_t coord_temp;
+	 double lat_rad = coord.latitude * M_DEG_TO_RAD;
+	 double lon_rad = coord.longitude * M_DEG_TO_RAD;
+ 
+	 double ref_lon_rad = origin.longitude * M_DEG_TO_RAD;
+	 double ref_lat_rad = origin.latitude * M_DEG_TO_RAD;
+ 
+	 double sin_lat = sin(lat_rad);
+	 double cos_lat = cos(lat_rad);
+	 double cos_d_lon = cos(lon_rad - ref_lon_rad);
+ 
+	 double ref_sin_lat = sin(ref_lat_rad);
+	 double ref_cos_lat = cos(ref_lat_rad);
+ 
+	 double c = acos(ref_sin_lat * sin_lat + ref_cos_lat * cos_lat * cos_d_lon);
+	 printf("c=====%f",c);
+	 double k = (fabs(c) <epsilon) ? 1.0 : (c / sin(c));
+
+	coord_temp.latitude = k * (ref_cos_lat * sin_lat - ref_sin_lat * cos_lat * cos_d_lon) * CONSTANTS_RADIUS_OF_EARTH;
+	coord_temp.longitude = k * cos_lat * sin(lon_rad - ref_lon_rad) * CONSTANTS_RADIUS_OF_EARTH;
+	coord_temp.altitude= sqrt(coord_temp.latitude*coord_temp.latitude+coord_temp.longitude*coord_temp.longitude);
+  return coord_temp;
+ }
+
+//G2018011113141 CY128 坐标转换  Convert polygon to NED
+#if 0
+ void polygon_to_NED()
+{
+	 for (int i=0; i<_mapPolygon.count(); i++) {
+		 double y, x, down;
+		 QGeoCoordinate vertex = _mapPolygon.pathModel().value<QGCQGeoCoordinate*>(i)->coordinate();
+		 if (i == 0) {
+			 // This avoids a nan calculation that comes out of convertGeoToNed
+			 x = y = 0;
+		 } else {
+			 convertGeoToNed(vertex, tangentOrigin, &y, &x, &down);
+		 }
+		 polygonPoints += QPointF(x, y);
+//		 qCDebug(SurveyMissionItemLog) << "vertex:x:y" << vertex << polygonPoints.last().x() << polygonPoints.last().y();
+	 }
+
+}
+#endif  //end of MAV_LOG_TSET
+float gfAltitude=25.0000000;//全局变量，待移至 include
+#define  WAYPOINT_SIZE  10
+/***************************************************************************
+  Function:          coord_set
+  Description:       功能函数，简化代码
+  Input:             float altitude       //$
+                     float longitude      //$
+  Output:            void
+  Return:            coord_t    //$
+  Others:            none
+****************************************************************************/
+#if 1
+ coord_t coord_set(double latitude,double longitude)
+ #else
+
+ coord_t coord_set(float latitude,float longitude)
+#endif
+{
+	coord_t coord_temp;
+	coord_temp.latitude  =		latitude;				//				float x, 
+	coord_temp.longitude =		longitude;				//				float y, 
+	coord_temp.altitude  =		gfAltitude;				//				float z
+return coord_temp;
+}
+/***************************************************************************
+  Function:          polygon_set_AB
+  Description:       $
+  Input:             coord_t coord_A      //$
+                     coord_t coord_B      //$
+                     bool direction       //0 left  1  right
+  Output:            void
+  Return:            void
+  Others:            none
+****************************************************************************/
+ void polygon_set_AB(coord_t coord_A, coord_t coord_B,bool direction)
+{
+
+
+}
+
 
  void waypoint_test()
 {
-	mavlink_mission_item_t msg_temp[10];//建议做局部变量
+	mavlink_mission_item_t msg_temp[WAYPOINT_SIZE];//建议做局部变量
 	u8 seq_cnt=0;
-	coord_gloable.altitude  =		22.5731620 ;					//				float x, 
-	coord_gloable.longitude =		113.5783691;				//				float y, 
-	coord_gloable.altitude  =		25.0000000 ;				//				float z
+	coord_t coord_temp[WAYPOINT_SIZE];
+	coord2_t coord_distance;
+    coord_t coord_distance2;
+	u8 WayPointCnt=0;
+    float coord_angle;
+	coord_temp[0]=coord_set(22.5730988,113.5782881); //A
+	coord_temp[1]=coord_set(22.5733928,113.5779696); //B
+	coord_temp[2]=coord_set(22.5734273,113.5780150); //B
+	coord_distance=convertGeoToNed(coord_temp[0], coord_temp[1]);
+	printf("111x==%f  \n y==%f \n z==%f \r\n",coord_distance.latitude,coord_distance.longitude,coord_distance.altitude);
+
+	coord_distance.altitude=0;
+	coord_distance2=convertNedToGeo(coord_temp[0], coord_distance);
+	printf("222x==%f  \n y==%f \n z==%f \r\n",coord_distance2.latitude,coord_distance2.longitude,coord_distance2.altitude);
+
+//	coord_distance=convertGeoToNed(coord_temp[1], coord_temp[2]);
+//	printf("222x==%f  \n y==%f \n z==%f \r\n",coord_distance.latitude,coord_distance.longitude,coord_distance.altitude);
+
+//	coord_distance.altitude=0;
+//	coord_distance2=convertNedToGeo(coord_temp[1], coord_distance);
+//	printf("222x==%f  \n y==%f \n z==%f \r\n",coord_distance2.latitude,coord_distance2.longitude,coord_distance2.altitude);
+//	
+//	coord_temp[WayPointCnt].altitude  =		22.5731620 ;				//				float x, 
+//	coord_temp[WayPointCnt].longitude =		113.5783691;				//				float y, 
+//	coord_temp[WayPointCnt].altitude  =		25.0000000 ;				//				float z
 	item_pack( &msg_temp[seq_cnt],
 				seq_cnt, 
 				MAV_CMD_NAV_WAYPOINT,					//				uint16_t command, 
 				0,					//				float param1, 
 				0,					//				float param2, 
 				0,					//				float param3, 
-				0,					//				float param4, 
-		coord_gloable.altitude	, 				//				float x, 
-		coord_gloable.longitude ,				//				float y, 
-		coord_gloable.altitude						//				float z
+				0,					//				float param4,   angle,只设置第一点即可
+				coord_gloable.altitude	, 					//				float x, 
+				coord_gloable.longitude ,					//				float y, 
+				coord_gloable.altitude						//				float z
 				);
 	seq_cnt++;
-	item_pack( &msg_temp[seq_cnt],
-				seq_cnt, 
-				MAV_CMD_NAV_WAYPOINT,					//				uint16_t command, 
-				0,					//				float param1, 
-				0,					//				float param2, 
-				0,					//				float param3, 
-				0,					//				float param4, 
-				22.5730420,					//				float x, 
-				113.57822241,				//				float y, 
-				25.0000000					//				float z
-				);
-	seq_cnt++;
-
-				mavlink_mission_count_t packet;
-				packet.count = seq_cnt;
-				packet.target_system = 1;
-				packet.target_component = 190;
-				packet.mission_type = 0;
-				_mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_MISSION_COUNT, (const char *)&packet, MAVLINK_MSG_ID_MISSION_COUNT_MIN_LEN, MAVLINK_MSG_ID_MISSION_COUNT_LEN, MAVLINK_MSG_ID_MISSION_COUNT_CRC);
-
-				
-for ( u8 i = 0 ; i <seq_cnt ; i++ )
-{
-	_mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_MISSION_ITEM, (const char *)&msg_temp[i], MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN, MAVLINK_MSG_ID_MISSION_ITEM_LEN, MAVLINK_MSG_ID_MISSION_ITEM_CRC);
-}
+//Start G2018011113141 CY128  $send item 
+			mavlink_mission_count_t packet;
+			packet.count = seq_cnt;
+			packet.target_system = 1;
+			packet.target_component = 190;
+			packet.mission_type = 0;
+			_mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_MISSION_COUNT, (const char *)&packet, MAVLINK_MSG_ID_MISSION_COUNT_MIN_LEN, MAVLINK_MSG_ID_MISSION_COUNT_LEN, MAVLINK_MSG_ID_MISSION_COUNT_CRC);
+			for ( u8 i = 0 ; i <seq_cnt ; i++ )
+			{
+				_mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_MISSION_ITEM, (const char *)&msg_temp[i], MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN, MAVLINK_MSG_ID_MISSION_ITEM_LEN, MAVLINK_MSG_ID_MISSION_ITEM_CRC);
+			}
+//End G2018011113141 CY128 
 
 				
 }
