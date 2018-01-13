@@ -333,7 +333,7 @@ static inline void mavlink_msg_vfr_hud_decode(const mavlink_message_t* msg, mavl
 	
 #else
 #if  MAV_LOG_TSET
-		printf("vfr_hud->heading===%d\r\n",vfr_hud->heading);
+//		printf("vfr_hud->heading===%d\r\n",vfr_hud->heading);
 #endif
 
         uint8_t len = msg->len < MAVLINK_MSG_ID_VFR_HUD_LEN? msg->len : MAVLINK_MSG_ID_VFR_HUD_LEN;

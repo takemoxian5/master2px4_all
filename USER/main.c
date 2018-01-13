@@ -90,6 +90,7 @@ char  test_cntxx[20];
 /*
  *
  */
+ uint8_t            system_id=6,component_id= 0;
 int main(void)
 {
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);//中断优先级组别设置
@@ -137,7 +138,6 @@ int main(void)
 	control.z_acc=1;
 	control.z_vel=2;
 	control.z_pos=3;*/
-	
 	set_position.target_system=1;
 	set_position.target_component=0;
 	set_position.coordinate_frame=MAV_FRAME_LOCAL_NED;
@@ -163,11 +163,10 @@ int main(void)
 //	set_mode.target_system=1;
 //	set_mode.base_mode=MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 //	set_mode.custom_mode=4;
-		set_mode.custom_mode=4;
-		set_mode.target_system=1;
-		set_mode.base_mode=157;//MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+	set_mode.custom_mode=220;
+	set_mode.target_system=1;
+	set_mode.base_mode=220;//MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 		
-
 	take_off_local.target_system=1;
 	take_off_local.target_component=0;
 	take_off_local.confirmation=true;
@@ -180,7 +179,7 @@ int main(void)
 	take_off_local.param7=5;
 	
 	ROI.target_system=1;
-	ROI.target_component=0;
+	ROI.target_component=190;
 	ROI.confirmation=true;
 	ROI.command=MAV_CMD_DO_SET_SERVO;
 	ROI.param1=1;
@@ -224,9 +223,12 @@ int main(void)
 //			  sysTickUptime = 0;
 //			  mavlink_send_message(0, MSG_LOCATION, 0);
 			  mavlink_send_message(0, MSG_HEARTBEAT, 0);
+mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&ROI);
+
 //			mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&com);
 //			mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&land);
-		mavlink_msg_set_mode_send_struct(MAVLINK_COMM_0,&set_mode);
+//		mavlink_msg_set_mode_send_struct(MAVLINK_COMM_0,&set_mode);
+//		mavlink_test_set_mode(system_id, component_id, last_msg);
 
 		//USART_SendData(USART2,a);
 		//while(USART_GetFlagStatus(USART2,USART_FLAG_TC)!=SET);//等待发送结束
@@ -276,7 +278,8 @@ int main(void)
             }
 			else if(sysTickUptime % 200==5)
             {
-uint8_t            system_id=6,component_id= 0;
+
+
 //uint8_t            system_id=mavlink_msg_mission_count_get_target_system(msg);
 //uint8_t			 component_id=  mavlink_msg_mission_count_get_target_component(msg);
 

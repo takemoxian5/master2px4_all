@@ -351,29 +351,7 @@ static void waypoint_send(uint8_t system_id, uint8_t component_id, mavlink_messa
 
 }
 
-//float 有效精度就7位，113.5782881为例至少10位精度，必须double 15~16位
-typedef struct __coord_t
-{
-    double latitude;
-    double longitude;
-    double altitude;
-} coord_t;
-coord_t coord_gloable;
-typedef struct __coord2_t
-{
-    float latitude;
-    float longitude;
-    float altitude;
-} coord2_t;
-
-typedef struct __coordNed_t
-{
-    float y;    //latitude   纬度 ，南北向为y
-    float x;      //longitude 东西向为x
-    float z;    // 高度
-    float dist;    //绝对距离
-} coordNed_t;
-
+coord_t coord_gloableA,coord_gloableB;
 
 
 // These defines are private
@@ -572,7 +550,7 @@ void send_one_Waypoint(u8 seq_cnt,coord_t coord_temp)
    Return:			  void
    Others:			  none
  ****************************************************************************/
- void polygon_set_AB(coord_t coord_A, coord_t coord_B,bool direction)
+ void polygon_set_AB(coord_t coord_A, coord_t coord_B,u8 direction)
  {
 		 mavlink_mission_item_t msg_temp[4];//建议做局部变量
 		 u8 seq_cnt=0;

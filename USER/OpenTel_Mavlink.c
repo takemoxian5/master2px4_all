@@ -3,6 +3,7 @@
 #include "OpenTel_Mavlink.h"
 #include "fifo.h"
 #include "usart.h"
+#include "MissionAPI.h"	
 
 
 //Add By BigW
@@ -41,7 +42,7 @@ mavlink_mission_set_current_t mission_set_current;
 mavlink_mission_current_t mission_current;
 
 mavlink_gps_raw_int_t gps_raw_int;
-mavlink_rc_channels_raw_t rc_channels_raw;
+mavlink_rc_channels_t rc_channels;
 mavlink_mission_item_int_t mission_item_int;
 
 uint8_t buf[100];
@@ -347,7 +348,7 @@ void update(void)
 			
 				&&msg.msgid!=147 //BATTERY
 				&&msg.msgid!=2 //sys time
-				&&msg.msgid!=65 //rc
+				&&msg.msgid!=65 //rc  
 				&&msg.msgid!=70 //rc
 				&&msg.msgid!=245 //extended
 				&&msg.msgid!=231 //wind
@@ -355,12 +356,26 @@ void update(void)
 				&&msg.msgid!=230 //estimator
 				&&msg.msgid!=141 //altitude
 				&&msg.msgid!=24 //gps_raw_int
+				&&msg.msgid!=42 //mission CURRENT
+
+			
+				&&msg.msgid!=77 //COMMAND_ACK
+
+			
 				)
                 printf("new msg msgid======+========================%d====get!\r\n",msg.msgid);
 
         }
     }
 }
+
+///for rc
+#define PPM_ZERO_CENTRE 1500  //平衡零点
+#define PPM_ZERO 982
+#define PPM_RANGE 851 //820
+#define PPM_MIN 173
+#define PPM_MAX 1813
+#define PPM_RANGE_2 PPM_RANGE+PPM_RANGE //820
 
 
 void handleMessage(mavlink_message_t* msg)
@@ -414,8 +429,37 @@ void handleMessage(mavlink_message_t* msg)
         }
 		case MAVLINK_MSG_ID_RC_CHANNELS:
         {
-            mavlink_msg_rc_channels_raw_decode( msg, &rc_channels_raw);
-            break;
+            mavlink_msg_rc_channels_decode( msg, &rc_channels);
+
+
+			if(rc_channels.chan5_raw<PPM_ZERO_CENTRE-PPM_MIN)  //A
+{
+				coord_gloableA = coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000));
+
+				printf("gps_raw_A===%d  %d    %d\r\n",gps_raw_int.lat,gps_raw_int.lon,gps_raw_int.alt);
+}
+			else if(rc_channels.chan5_raw>PPM_ZERO_CENTRE+PPM_MIN)//B
+{
+				coord_gloableB= coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000));
+
+				printf("gps_raw_B===%d	%d	  %d\r\n",gps_raw_int.lat,gps_raw_int.lon,gps_raw_int.alt);
+}
+			if(rc_channels.chan11_raw>PPM_ZERO_CENTRE+PPM_MIN)  //c1  2046
+{
+				polygon_set_AB(  coord_gloableA,  coord_gloableB, 0);
+				printf(" c1 get\r\n");
+}
+			else if(rc_channels.chan12_raw==PPM_ZERO_CENTRE+PPM_MIN)	//c2 2046 
+{
+				polygon_set_AB(  coord_gloableA,  coord_gloableB, 1);
+				printf(" c2 get\r\n");
+				
+}
+			if(rc_channels.chan10_raw>PPM_ZERO)  //流量  982 1622 1747 1862 2006
+				printf("OUT %d \r\n",rc_channels.chan10_raw);
+
+
+			break;
         }
 		case MAVLINK_MSG_ID_MISSION_SET_CURRENT:
         {

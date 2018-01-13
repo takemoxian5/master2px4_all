@@ -18,7 +18,7 @@ uint8_t uart_tx_buf[UART_TX_BUFFER_SIZE], uart_rx_buf[UART_RX_BUFFER_SIZE];
 //加入以下代码,支持printf函数,而不需要选择use MicroLIB
 
 
-#if 0   //1正常设计接口，USART2为remote ,USART3为px4_link
+#if 1   //1正常设计接口，USART2为remote ,USART3为px4_link
 #define USART_USER1_IRQHandler void USART2_IRQHandler(void)
 #define USART_USER2_IRQHandler void USART3_IRQHandler(void)
 #define USART_USER1 USART2
