@@ -352,6 +352,10 @@ static void waypoint_send(uint8_t system_id, uint8_t component_id, mavlink_messa
 }
 
 coord_t coord_gloableA,coord_gloableB;
+float grid_angle;
+u8 grid_space=6; //喷洒间距
+
+
 
 
 // These defines are private
@@ -532,7 +536,7 @@ void send_one_Waypoint(u8 seq_cnt,coord_t coord_temp)
 					   0,				   //			   float param1,
 					   0,				   //			   float param2,
 					   0,				   //			   float param3,
-					   0,				   //			   float param4,   angle,只设置第一点即可
+					   grid_angle,				   //			   float param4,   angle,只设置第一点即可
 					   coord_temp.latitude,					   //			   float x,
 					   coord_temp.longitude, 				   //			   float y,
 					   coord_temp.altitude					   //			   float z
@@ -557,8 +561,7 @@ void send_one_Waypoint(u8 seq_cnt,coord_t coord_temp)
 		 coord_t coord_temp[4];
 		 coordNed_t grid_distance,grid_dist_vert,grid_distance_op;
 		 u8 i;
-		 float grid_angle;
-		 u8 grid_space=6; //喷洒间距
+
 		 grid_distance=convertGeoToNed(coord_A, coord_B);
 		 grid_angle = (atan2(grid_distance.y, grid_distance.x) * M_RAD_TO_DEG);
 		 printf("grid_angle==%f \r\n",grid_angle);

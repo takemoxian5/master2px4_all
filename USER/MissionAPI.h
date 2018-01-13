@@ -35,10 +35,8 @@ typedef struct
  {
 	 double latitude;
 	 double longitude;
-	 double altitude;
+     double altitude;
  } coord_t;
- extern coord_t coord_gloableA;
-  extern coord_t coord_gloableB;
  typedef struct __coordNed_t
  {
 	 float y;	 //latitude   纬度 ，南北向为y
@@ -49,6 +47,11 @@ typedef struct
 
 
 
+
+ extern coord_t coord_gloableA;
+ extern coord_t coord_gloableB;
+  extern float grid_angle;
+ extern  u8 grid_space=6; //喷洒间距
 
  void waypoint_test();
 void polygon_set_AB(coord_t coord_A, coord_t coord_B,u8 direction);

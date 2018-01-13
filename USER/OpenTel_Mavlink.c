@@ -374,7 +374,7 @@ void update(void)
 #define PPM_ZERO 982
 #define PPM_RANGE 851 //820
 #define PPM_MIN 173
-#define PPM_MAX 1813
+#define PPM_MAX 2046
 #define PPM_RANGE_2 PPM_RANGE+PPM_RANGE //820
 
 
@@ -432,24 +432,24 @@ void handleMessage(mavlink_message_t* msg)
             mavlink_msg_rc_channels_decode( msg, &rc_channels);
 
 
-			if(rc_channels.chan5_raw<PPM_ZERO_CENTRE-PPM_MIN)  //A
+			if(rc_channels.chan5_raw==PPM_ZERO)  //A  982
 {
 				coord_gloableA = coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000));
 
 				printf("gps_raw_A===%d  %d    %d\r\n",gps_raw_int.lat,gps_raw_int.lon,gps_raw_int.alt);
 }
-			else if(rc_channels.chan5_raw>PPM_ZERO_CENTRE+PPM_MIN)//B
+			else if(rc_channels.chan5_raw==PPM_MAX)//B  2046
 {
 				coord_gloableB= coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000));
 
 				printf("gps_raw_B===%d	%d	  %d\r\n",gps_raw_int.lat,gps_raw_int.lon,gps_raw_int.alt);
 }
-			if(rc_channels.chan11_raw>PPM_ZERO_CENTRE+PPM_MIN)  //c1  2046
+			if(rc_channels.chan11_raw==PPM_MAX)  //c1  2046
 {
 				polygon_set_AB(  coord_gloableA,  coord_gloableB, 0);
 				printf(" c1 get\r\n");
 }
-			else if(rc_channels.chan12_raw==PPM_ZERO_CENTRE+PPM_MIN)	//c2 2046 
+			else if(rc_channels.chan12_raw==PPM_MAX)	//c2 2046 
 {
 				polygon_set_AB(  coord_gloableA,  coord_gloableB, 1);
 				printf(" c2 get\r\n");
