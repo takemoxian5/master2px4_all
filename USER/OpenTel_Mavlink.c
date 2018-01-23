@@ -3,7 +3,7 @@
 #include "OpenTel_Mavlink.h"
 #include "fifo.h"
 #include "usart.h"
-#include "MissionAPI.h"	
+#include "MissionAPI.h"
 
 
 //Add By BigW
@@ -34,8 +34,8 @@ mavlink_ahrs_t              ahrs;
 
 
 mavlink_vfr_hud_t           vfr_hud;
-mavlink_manual_control_t	manual_control;
-mavlink_sys_status_t		sys_status;
+mavlink_manual_control_t    manual_control;
+mavlink_sys_status_t        sys_status;
 mavlink_local_position_ned_t local_position_ned;
 mavlink_mission_count_t mission_count;
 mavlink_mission_set_current_t mission_set_current;
@@ -44,6 +44,8 @@ mavlink_mission_current_t mission_current;
 mavlink_gps_raw_int_t gps_raw_int;
 mavlink_rc_channels_t rc_channels;
 mavlink_mission_item_int_t mission_item_int;
+mavlink_mission_request_t mission_request;
+mavlink_mission_ack_t  mission_ack;
 
 uint8_t buf[100];
 //End Add By BigW
@@ -332,7 +334,7 @@ void update(void)
     // process received bytes
     while(serial_available())
     {
-        uint8_t c = serial_read_ch(); 
+        uint8_t c = serial_read_ch();
 
         // Try to get a new message
         if (mavlink_parse_char(chan, c, &msg, &status))
@@ -340,29 +342,29 @@ void update(void)
             mavlink_active = true;
             handleMessage(&msg);
             if(msg.msgid!=MAVLINK_MSG_ID_HEARTBEAT
-				&&msg.msgid!=MAVLINK_MSG_ID_SYS_STATUS
-				&&msg.msgid!=MAVLINK_MSG_ID_ATTITUDE
-				&&msg.msgid!=MAVLINK_MSG_ID_VFR_HUD //BATTERY
-				&&msg.msgid!=MAVLINK_MSG_ID_SERVO_OUTPUT_RAW
+               &&msg.msgid!=MAVLINK_MSG_ID_SYS_STATUS
+               &&msg.msgid!=MAVLINK_MSG_ID_ATTITUDE
+               &&msg.msgid!=MAVLINK_MSG_ID_VFR_HUD //BATTERY
+               &&msg.msgid!=MAVLINK_MSG_ID_SERVO_OUTPUT_RAW
 
-			
-				&&msg.msgid!=147 //BATTERY
-				&&msg.msgid!=2 //sys time
-				&&msg.msgid!=65 //rc  
-				&&msg.msgid!=70 //rc
-				&&msg.msgid!=245 //extended
-				&&msg.msgid!=231 //wind
-				&&msg.msgid!=241 //vibration 
-				&&msg.msgid!=230 //estimator
-				&&msg.msgid!=141 //altitude
-				&&msg.msgid!=24 //gps_raw_int
-				&&msg.msgid!=42 //mission CURRENT
 
-			
-				&&msg.msgid!=77 //COMMAND_ACK
+               &&msg.msgid!=147 //BATTERY
+               &&msg.msgid!=2 //sys time
+               &&msg.msgid!=65 //rc
+               &&msg.msgid!=70 //rc
+               &&msg.msgid!=245 //extended
+               &&msg.msgid!=231 //wind
+               &&msg.msgid!=241 //vibration
+               &&msg.msgid!=230 //estimator
+               &&msg.msgid!=141 //altitude
+               &&msg.msgid!=24 //gps_raw_int
+               &&msg.msgid!=42 //mission CURRENT
 
-			
-				)
+
+               &&msg.msgid!=77 //COMMAND_ACK
+
+
+              )
                 printf("new msg msgid======+========================%d====get!\r\n",msg.msgid);
 
         }
@@ -376,10 +378,48 @@ void update(void)
 #define PPM_MIN 173
 #define PPM_MAX 2046
 #define PPM_RANGE_2 PPM_RANGE+PPM_RANGE //820
+uint16_t current_seq=0;
+u8 test_flag_chan9=0;
+u8 test_flag_chan10=0;
+
+u8 test_flag_chan11=0;
+u8 test_flag_chan12=0;
+u8 test_flag_chan16=0;
+
+u16 key_safe_last=0;
+typedef struct __smart_item_s
+{
+    u8 last;
+    u8 current;
+} smart_item_s;
+
+smart_item_s smart_item;
 
 
 void handleMessage(mavlink_message_t* msg)
 {
+
+    mavlink_command_long_t take_off_local= {0};
+
+    take_off_local.target_system=1;
+    take_off_local.target_component=0;
+    take_off_local.confirmation=true;
+    take_off_local.command=MAV_CMD_NAV_TAKEOFF_LOCAL;
+    take_off_local.param1=  0;
+    take_off_local.param3=0;
+    take_off_local.param4=0;
+    take_off_local.param5=0;
+    take_off_local.param6=0;
+    take_off_local.param7=5;
+    mavlink_command_long_t mission_start= {0};
+
+    mission_start.target_system=1;
+    mission_start.target_component=0;
+    mission_start.confirmation=true;
+    mission_start.command=MAV_CMD_MISSION_START;
+    mission_start.param1=0;
+    mission_start.param2=5;
+
     //struct Location tell_command = {};                                  // command for telemetry
     switch (msg->msgid)
     {
@@ -394,7 +434,6 @@ void handleMessage(mavlink_message_t* msg)
             mavlink_msg_attitude_decode(msg, &attitude);
             break;
         }
-
 //        case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
 //        {
 //            mavlink_msg_global_position_int_decode(msg, &position);
@@ -417,77 +456,183 @@ void handleMessage(mavlink_message_t* msg)
 //            mavlink_msg_manual_control_decode(msg, &manual_control);
 //            break;
 //        }
-		case MAVLINK_MSG_ID_SYS_STATUS:
+        case MAVLINK_MSG_ID_SYS_STATUS:
         {
             mavlink_msg_sys_status_decode( msg, &sys_status);
             break;
         }
-		case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
+        case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
         {
             mavlink_msg_local_position_ned_decode( msg, &local_position_ned);
+            printf("local_position_ned===%f\r\n",local_position_ned.z);
             break;
         }
-		case MAVLINK_MSG_ID_RC_CHANNELS:
+        case MAVLINK_MSG_ID_RC_CHANNELS:
         {
             mavlink_msg_rc_channels_decode( msg, &rc_channels);
 
 
-			if(rc_channels.chan5_raw==PPM_ZERO)  //A  982
-{
-				coord_gloableA = coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000));
+            if(rc_channels.chan5_raw==PPM_ZERO)  //A  982
+            {
+                coord_gloableA = coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000),(((double)gps_raw_int.alt )/10000000));
 
-				printf("gps_raw_A===%d  %d    %d\r\n",gps_raw_int.lat,gps_raw_int.lon,gps_raw_int.alt);
-}
-			else if(rc_channels.chan5_raw==PPM_MAX)//B  2046
-{
-				coord_gloableB= coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000));
+                printf("gps_raw_A===%d  %d    %d\r\n",gps_raw_int.lat,gps_raw_int.lon,gps_raw_int.alt);
+            }
+            else if(rc_channels.chan5_raw==PPM_MAX)//B  2046
+            {
+                coord_gloableB= coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000),(((double)gps_raw_int.alt )/10000000));
+                coord_gloableB.altitude-=coord_gloableHome.altitude;//换为相对高度
+                if(coord_gloableB.altitude>10)coord_gloableB.altitude=10;
+                if(coord_gloableB.altitude<4)coord_gloableB.altitude=4;
 
-				printf("gps_raw_B===%d	%d	  %d\r\n",gps_raw_int.lat,gps_raw_int.lon,gps_raw_int.alt);
-}
-			if(rc_channels.chan11_raw==PPM_MAX)  //c1  2046
-{
-				polygon_set_AB(  coord_gloableA,  coord_gloableB, 0);
-				printf(" c1 get\r\n");
-}
-			else if(rc_channels.chan12_raw==PPM_MAX)	//c2 2046 
-{
-				polygon_set_AB(  coord_gloableA,  coord_gloableB, 1);
-				printf(" c2 get\r\n");
-				
-}
-			if(rc_channels.chan10_raw>PPM_ZERO)  //流量  982 1622 1747 1862 2006
-				printf("OUT %d \r\n",rc_channels.chan10_raw);
+                printf("gps_raw_B===%d	%d	  %d\r\n",gps_raw_int.lat,gps_raw_int.lon,gps_raw_int.alt);
+            }
 
 
-			break;
+            if(rc_channels.chan7_raw  !=key_safe_last)  //A  982
+            {
+                if(coord_gloableHome.altitude==0)
+                    coord_gloableHome = coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000),(((double)gps_raw_int.alt )/10000000));
+            }
+            key_safe_last=rc_channels.chan7_raw;
+            if(rc_channels.chan11_raw==PPM_MAX)  //c1  2046
+            {
+                test_flag_chan11=1;
+            }
+            else if(test_flag_chan11==1)
+            {
+                test_flag_chan11=0;
+                polygon_set_AB(  coord_gloableA,  coord_gloableB, 0);
+                printf(" c1 get\r\n");
+
+            }
+            if(rc_channels.chan12_raw==PPM_MAX)    //c2 2046
+            {
+                test_flag_chan12=1;
+            }
+            else if(test_flag_chan12==1)
+            {
+                test_flag_chan12=0;
+                polygon_set_AB(  coord_gloableA,  coord_gloableB, 1);
+                printf(" c2 get\r\n");
+            }
+            switch (rc_channels.chan8_raw)
+            {
+                case PPM_MAX:
+                    smart_item.last=mission_current.seq;
+                    break;
+                default:
+                    break;
+            }
+
+            if(rc_channels.chan10_raw==1622)  //流量  982 1622 1747 1862 2006
+            {
+                printf("OUT %d \r\n",rc_channels.chan10_raw);
+//          mavlink_msg_set_mode_send(MAVLINK_COMM_0, 1, 89, 89);
+                if(test_flag_chan10==0)
+                {
+                    test_flag_chan10=1;
+//              take_off_local.param5=gps_raw_int.lat;
+//  take_off_local.param6=gps_raw_int.lon;
+                    //      mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&take_off_local);
+                }
+
+//          current_seq= (rc_channels.chan10_raw-PPM_ZERO)/200;
+//          mavlink_msg_mission_set_current_send(MAVLINK_COMM_0,  1, 190, current_seq);
+            }
+            else if(rc_channels.chan10_raw==1747)  //流量  982 1622 1747 1862 2006
+            {
+
+//          mavlink_msg_mission_set_current_send(MAVLINK_COMM_0,  1, 190, 2);
+                mission_start.command=MAV_CMD_COMPONENT_ARM_DISARM;
+                mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
+                mission_start.command=MAV_CMD_MISSION_START;
+
+            }
+            else if(rc_channels.chan10_raw==1862)  //流量  982 1622 1747 1862 2006
+            {
+                //    mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
+
+//          mavlink_msg_set_mode_send(MAVLINK_COMM_0, 1, 89, 89);
+            }
+            else if(rc_channels.chan10_raw==982)  //流量  982 1622 1747 1862 2006
+            {
+//          mavlink_msg_mission_set_current_send(MAVLINK_COMM_0,  1, 190, 0);
+
+                test_flag_chan10=0;
+            }
+            if(rc_channels.chan9_raw==PPM_MAX)  //test   1键开始任务
+            {
+                test_flag_chan9=1;
+//                waypoint_test();
+            }
+            else if(test_flag_chan9==1)  //按两次
+            {
+                test_flag_chan9=0;
+                //  mavlink_msg_set_mode_send(MAVLINK_COMM_0, 1, 157, 157);//开始任务 9D=
+                mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
+            }
+            if(rc_channels.chan16_raw==PPM_MAX)  //test   1键开始任务
+            {
+                test_flag_chan16=1;
+//                waypoint_test();
+            }
+            else if(test_flag_chan16==1)  //按两次
+            {
+                test_flag_chan16=0;
+                mission_start.param1=smart_item.last;
+                //  mavlink_msg_set_mode_send(MAVLINK_COMM_0, 1, 157, 157);//开始任务 9D=
+                mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
+                mission_start.param1=0;
+            }
+            break;
         }
-		case MAVLINK_MSG_ID_MISSION_SET_CURRENT:
+        case MAVLINK_MSG_ID_MISSION_SET_CURRENT:
         {
             mavlink_msg_mission_set_current_decode( msg, &mission_set_current);
             break;
-        } 
-		case MAVLINK_MSG_ID_MISSION_CURRENT:
+        }
+        case MAVLINK_MSG_ID_MISSION_CURRENT:
         {
             mavlink_msg_mission_current_decode( msg, &mission_current);
+
+//          printf("mission_current===%d\r\n",mission_current.seq);
             break;
         }
-		case MAVLINK_MSG_ID_MISSION_COUNT:
+        case MAVLINK_MSG_ID_MISSION_COUNT:
         {
             mavlink_msg_mission_count_decode( msg, &mission_count);
             break;
         }
-		case MAVLINK_MSG_ID_GPS_RAW_INT:
+        case MAVLINK_MSG_ID_GPS_RAW_INT:
         {
             mavlink_msg_gps_raw_int_decode( msg, &gps_raw_int);
             break;
         }
-		case MAVLINK_MSG_ID_MISSION_ITEM_INT:
-			{
-				mavlink_msg_mission_item_int_decode( msg, &mission_item_int);
-				break;
-			}
+        case MAVLINK_MSG_ID_MISSION_ITEM_INT:
+        {
+            mavlink_msg_mission_item_int_decode( msg, &mission_item_int);
+            break;
+        }
+        case MAVLINK_MSG_ID_MISSION_REQUEST:
+        {
+            mavlink_msg_mission_request_decode( msg, &mission_request);
+            printf("mission_request===%d	%d	  %d\r\n",mission_request.seq,mission_request.target_component,mission_request.mission_type);
+            break;
+        }
 
-		default:
+        case    MAVLINK_MSG_ID_MISSION_ACK:
+        {
+            mavlink_msg_mission_ack_decode(msg, &mission_ack);
+//    mission_ack->target_system = mavlink_msg_mission_ack_get_target_system(msg);
+//    mission_ack->target_component = mavlink_msg_mission_ack_get_target_component(msg);
+//    mission_ack->type = mavlink_msg_mission_ack_get_type(msg);
+//    mission_ack->mission_type = mavlink_msg_mission_ack_get_mission_type(msg);
+//    mission_ack.type   MAV_MISSION_ACCEPTED=0,MAV_MISSION_ERROR=1
+            printf("target_system===%d	%d	  %d\r\n",mission_ack.mission_type,mission_ack.target_component,mission_ack.type);
+            break;
+        }
+        default:
             break;
     }     // end switch
 

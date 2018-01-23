@@ -57,7 +57,7 @@
 
 
 
-
+extern float gfAltitude;
 
 
 

@@ -85,8 +85,6 @@ void delay(void)
 #ifdef DEBUG_SEND_MSG
 char  test_cntxx[20];
 #endif
-
-
 /*
  *
  */
@@ -118,10 +116,9 @@ int main(void)
 	servo_output_raw->servo7_raw = 950;
 	servo_output_raw->servo8_raw = 1550;
 	servo_output_raw->port = 1;
-
 	
 	mavlink_command_long_t com = { 0 };
-	mavlink_set_mode_t set_mode={0};
+	mavlink_set_mode_t  set_mode={0};
 	mavlink_command_long_t take_off_local={0};
 	mavlink_command_long_t take_off={0};
 	mavlink_command_long_t land={0};
@@ -160,12 +157,12 @@ int main(void)
 	com.param1           = 4; // flag >0.5 => start, <0.5 => stop
 	com.param2           = 1314; // flag >0.5 => start, <0.5 => stop
 	
-//	set_mode.target_system=1;
-//	set_mode.base_mode=MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-//	set_mode.custom_mode=4;
-	set_mode.custom_mode=220;
 	set_mode.target_system=1;
-	set_mode.base_mode=220;//MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+	set_mode.custom_mode=4;
+    set_mode.base_mode=MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+//	set_mode.custom_mode=220;
+//	set_mode.target_system=1;
+//	set_mode.base_mode=220;//MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 		
 	take_off_local.target_system=1;
 	take_off_local.target_component=0;
@@ -178,18 +175,28 @@ int main(void)
 	take_off_local.param6=0;
 	take_off_local.param7=5;
 	
+//	ROI.target_system=1;
+//	ROI.target_component=190;
+//	ROI.confirmation=true;
+//	ROI.command=MAV_CMD_DO_SET_SERVO;
+//	ROI.param1=1;
+//	ROI.param2=1010;
+//	ROI.param3=0;
+//	ROI.param4=0;
+//	ROI.param5=0;
+//	ROI.param6=0;
+//	ROI.param7=0;
 	ROI.target_system=1;
 	ROI.target_component=190;
 	ROI.confirmation=true;
-	ROI.command=MAV_CMD_DO_SET_SERVO;
-	ROI.param1=1;
-	ROI.param2=1010;
-	ROI.param3=0;
+	ROI.command=MAV_CMD_DO_MOUNT_CONTROL;
+	ROI.param1=150;
+	ROI.param2=40;
+	ROI.param3=200;
 	ROI.param4=0;
 	ROI.param5=0;
 	ROI.param6=0;
-	ROI.param7=0;
-	
+	ROI.param7=0;	//MAV_MOUNT_MODE
 	take_off.target_system=1;
 	take_off.target_component=0;
 	take_off.confirmation=true;
@@ -276,34 +283,57 @@ int main(void)
 //                mavlink_send_message(0, MSG_AHRS, 0);
 //                mavlink_test_minimal(15, 7, msg);
             }
-			else if(sysTickUptime % 200==5)
+			else if(sysTickUptime % 1000==5)
             {
+				char  textFileBuffer[40];char  textFileBuffer2[40];
+				char  file_name_path[40];
+                TCHAR* file_name="/hl520.txt";
+TCHAR* file_path="/YX128";
+			FRESULT result;
+			FATFS fs;
+			DIR DirInf;
+			FILINFO FileInf;
+			FIL fil;
+				 uint32_t bw;
+            /* 挂载文件系统 */
+            result = f_mount(0, &fs);           /* Mount a logical drive */
+            if (result != FR_OK)
+            {
+                printf("挂载文件系统失败 (%d)\r\n", result);
+            }
+            /* 创建目录/  */
+            result = f_mkdir(file_path);
+            result=f_mount(0, &fs);
+            /* 打开根文件夹 */
+            result = f_opendir(&DirInf, file_path); /* 如果不带参数，则从当前目录开始 */
+            if (result != FR_OK)
+            {
+                printf("打开根目录失败 (%d)\r\n", result);
+            }
+			sprintf( file_name_path,    "%s%s",file_path,file_name);
+            printf("打开目录 (%s)\r\n", file_name_path);
+            result = f_open(&fil, file_name_path, FA_OPEN_ALWAYS | FA_WRITE);
+			if(result!=FR_OK)
+						{
+							while(1);
+						}
+             /* 写一串数据 */            
+			result = f_lseek (&fil, fil.sclust);  ////指针指向文件末尾
+//			sprintf( textFileBuffer,"1%d",system_id);
+                        textFileBuffer[0]=system_id;textFileBuffer[1]=51;textFileBuffer[2]=52;
+             result = f_write(&fil, &textFileBuffer, 4, &bw);
+
+			 /* 关闭文件*/
+            f_close(&fil);
+			 /* 读取文件 */
+					   result = f_read(&fil, textFileBuffer2, 4,&bw);
 
 
-//uint8_t            system_id=mavlink_msg_mission_count_get_target_system(msg);
-//uint8_t			 component_id=  mavlink_msg_mission_count_get_target_component(msg);
+//				  printf("\r\narmfly1.txt   : \r\n%s\r\n", textFileBuffer2);
+//                  printf("\r\narmfly2.txt   : \r\n%d\r\n", textFileBuffer2[1]);
 
-//mavlink_test_set_mode(system_id, component_id, last_msg);
+//			Param_SavePID();
 
-//			mavlink_test_mission_count(system_id, component_id, last_msg);
-//			mavlink_test_mission_item(system_id, component_id, last_msg);
-
-
-//waypoint_test();
-
-
-
-//	mavlink_test_mission_request_partial_list(system_id, component_id, last_msg);
-//    mavlink_test_mission_write_partial_list(system_id, component_id, last_msg);
-//    mavlink_test_mission_item(system_id, component_id, last_msg);
-//    mavlink_test_mission_request(system_id, component_id, last_msg);
-//    mavlink_test_mission_set_current(system_id, component_id, last_msg);
-//    mavlink_test_mission_current(system_id, component_id, last_msg);
-//    mavlink_test_mission_request_list(system_id, component_id, last_msg);
-//    mavlink_test_mission_count(system_id, component_id, last_msg);
-//    mavlink_test_mission_clear_all(system_id, component_id, last_msg);
-//    mavlink_test_mission_item_reached(system_id, component_id, last_msg);
-//    mavlink_test_mission_ack(system_id, component_id, last_msg);
 			}
             update();
 //			remote_update();

@@ -15,6 +15,7 @@
 #include "ff.h"
 #include "sdio_sdcard.h"
 #include "height_ctrl.h"
+#include  "parameter.h"
 
 #define SENSOR_SETUP_FILE      "sensor.bin"
 #define PID_SETUP_FILE         "pid.bin"
