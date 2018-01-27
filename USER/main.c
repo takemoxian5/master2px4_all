@@ -96,7 +96,7 @@ int main(void)
 	SysTick_Configuration(); 	//滴答时钟
     delay_init(168);      // 延时
     serial_open(0, 0);
-    Para_Init();							//参数初始化
+//    Para_Init();							//参数初始化
     TIM3_Int_Init(0xFFFF,8400-1);   //��ʱ��ʱ��84M����Ƶϵ��8400������84M/8400=10Khz�ļ���Ƶ��
     
     Cycle_Time_Init();
@@ -285,52 +285,13 @@ int main(void)
             }
 			else if(sysTickUptime % 1000==5)
             {
-				char  textFileBuffer[40];char  textFileBuffer2[40];
-				char  file_name_path[40];
-                TCHAR* file_name="/hl520.txt";
-TCHAR* file_path="/YX128";
-			FRESULT result;
-			FATFS fs;
-			DIR DirInf;
-			FILINFO FileInf;
-			FIL fil;
-				 uint32_t bw;
-            /* 挂载文件系统 */
-            result = f_mount(0, &fs);           /* Mount a logical drive */
-            if (result != FR_OK)
-            {
-                printf("挂载文件系统失败 (%d)\r\n", result);
-            }
-            /* 创建目录/  */
-            result = f_mkdir(file_path);
-            result=f_mount(0, &fs);
-            /* 打开根文件夹 */
-            result = f_opendir(&DirInf, file_path); /* 如果不带参数，则从当前目录开始 */
-            if (result != FR_OK)
-            {
-                printf("打开根目录失败 (%d)\r\n", result);
-            }
-			sprintf( file_name_path,    "%s%s",file_path,file_name);
-            printf("打开目录 (%s)\r\n", file_name_path);
-            result = f_open(&fil, file_name_path, FA_OPEN_ALWAYS | FA_WRITE);
-			if(result!=FR_OK)
-						{
-							while(1);
-						}
-             /* 写一串数据 */            
-			result = f_lseek (&fil, fil.sclust);  ////指针指向文件末尾
-//			sprintf( textFileBuffer,"1%d",system_id);
-                        textFileBuffer[0]=system_id;textFileBuffer[1]=51;textFileBuffer[2]=52;
-             result = f_write(&fil, &textFileBuffer, 4, &bw);
 
-			 /* 关闭文件*/
-            f_close(&fil);
-			 /* 读取文件 */
-					   result = f_read(&fil, textFileBuffer2, 4,&bw);
 
 
 //				  printf("\r\narmfly1.txt   : \r\n%s\r\n", textFileBuffer2);
-//                  printf("\r\narmfly2.txt   : \r\n%d\r\n", textFileBuffer2[1]);
+//                  printf("\r\narmfly2.txt   : \r\n%d\r\n", textFileBuffer2[0]);
+//				  printf("\r\narmfly3.txt	: \r\n%d\r\n", textFileBuffer2[1]);
+//				  printf("\r\narmfly4.txt	: \r\n%d\r\n", textFileBuffer2[2]);
 
 //			Param_SavePID();
 

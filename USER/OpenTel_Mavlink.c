@@ -4,7 +4,7 @@
 #include "fifo.h"
 #include "usart.h"
 #include "MissionAPI.h"
-
+#include "ff.h"
 
 //Add By BigW
 //typedef uint8_t bool;
@@ -370,9 +370,217 @@ void update(void)
         }
     }
 }
+char  sd_data[40];//char  textFileBuffer2[40];
+char  file_name_path[40];
+char* file_name="item.txt";
+char* file_path="/YX128";
+FRESULT result;
+FATFS fs;
+DIR DirInf;
+//FILINFO FileInf;
+FIL file;
+ uint32_t bw;
+u8 save_data()
+{
+#if 1
+			#if  0
+            /* 挂载文件系统 */
+            result = f_mount(0, &fs);           /* Mount a logical drive */
+            if (result != FR_OK)
+            {
+		/* 如果挂载不成功，进行格式化 */
+		result = f_mkfs("0:",0,0);
+			if (result != FR_OK)
+					{
+						 return -1; 	//flash有问题，无法格式化
+					}
+					else
+					{
+						/* 重新进行挂载 */
+						result = f_mount(0, &fs);			/* Mount a logical drive */
+				   if (result != FR_OK)
+				  {
+							/* 卸载文件系统 */
+					  f_mount(0, NULL);
+						 return -2 ;
+						}
+					}
+				}
+			
+				/* 打开根文件夹 */
+				result = f_opendir(&DirInf, "/"); 
+				if (result != FR_OK)
+				{
+					/* 卸载文件系统 */
+				  f_mount(0, NULL);
+					return -3;
+				}
+			
+				/* 打开文件 */
+				result = f_open(&file, file_name, FA_CREATE_ALWAYS | FA_WRITE);
+				if (result !=  FR_OK)
+				{
+				  /* 卸载文件系统 */
+				  f_mount(0, NULL);
+					return -4;
+				}
+			
+				/* 写入Sensor配置文件 */
+				result = f_write(&file, &sd_data, 4, &bw);
+				if (result == FR_OK)
+				{
+					/* 关闭文件*/
+				 f_close(&file);
+					/* 打开文件 */
+				 result = f_open(&file, file_name, FA_CREATE_ALWAYS | FA_WRITE);
+				  if (result !=  FR_OK)
+				 {
+					/* 卸载文件系统 */
+				  f_mount(0, NULL);
+					return -4;
+				 }
 
+             }
+#endif  //end of MAV_LOG_TSET
+            /* 挂载文件系统 */
+            result = f_mount(0, &fs);           /* Mount a logical drive */
+            if (result != FR_OK)
+            {
+                printf("挂载文件系统失败 (%d)\r\n", result);
+            }
+            /* 创建目录/  */
+//            result = f_mkdir(file_path);
+            result=f_mount(0, &fs);
+			/* 打开根文件夹 */
+				result = f_opendir(&DirInf, "/"); /* 如果不带参数，则从当前目录开始 */
+//            result = f_opendir(&DirInf, file_path); /* 如果不带参数，则从当前目录开始 */
+            if (result != FR_OK)
+            {
+                printf("打开根目录失败 (%d)\r\n", result);
+            }
+//			sprintf( file_name_path,    "%s%s",file_path,file_name);
+//            printf("打开目录 (%s)\r\n", file_name_path);
+            result = f_open(&file, file_name, FA_OPEN_ALWAYS | FA_WRITE);
+             /* 写一串数据 */            
+//			result = f_lseek (&fil, fil.fsize);  ////指针指向文件末尾
+
+             result = f_write(&file, &sd_data, 4, &bw);
+
+
+			 /* 关闭文件*/
+            f_close(&file);
+				/* 卸载文件系统 */
+			 f_mount(0, NULL);
+				return 1 ;
+
+
+
+		
+#endif  //end of MAV_LOG_TSET
+}
+                
+
+
+u8 read_data()
+{
+				/* 挂载文件系统 */
+				result = f_mount(0, &fs);			/* Mount a logical drive */
+				if (result != FR_OK)
+				{
+					printf("挂载文件系统失败 (%d)\r\n", result);
+				}
+				/* 创建目录/  */
+	//			  result = f_mkdir(file_path);
+				result=f_mount(0, &fs);
+				/* 打开根文件夹 */
+					result = f_opendir(&DirInf, "/"); /* 如果不带参数，则从当前目录开始 */
+	//			  result = f_opendir(&DirInf, file_path); /* 如果不带参数，则从当前目录开始 */
+				if (result != FR_OK)
+				{
+					printf("打开根目录失败 (%d)\r\n", result);
+				}
+	//			sprintf( file_name_path,	"%s%s",file_path,file_name);
+	//			  printf("打开目录 (%s)\r\n", file_name_path);
+				result = f_open(&file, file_name, FA_OPEN_EXISTING | FA_READ);
+				result = f_read(&file, sd_data, 4,&bw);
+							  /* 关闭文件*/
+			  f_close(&file);
+				 /* 卸载文件系统 */
+			  f_mount(0, NULL);
+				 return 1 ;
+
+#if 0
+		/* 挂载文件系统 */
+		result = f_mount(0, &fs);			/* Mount a logical drive */
+		if (result != FR_OK)
+		{
+			/* 如果挂载不成功，进行格式化 */
+			result = f_mkfs("0:",0,0);
+			if (result != FR_OK)
+			{
+				 return -1; 	//flash有问题，无法格式化
+			}
+			else
+			{
+				/* 重新进行挂载 */
+				result = f_mount(0, &fs);			/* Mount a logical drive */
+		   if (result != FR_OK)
+		  {
+					/* 卸载文件系统 */
+			  f_mount(0, NULL);
+				 return -2 ;
+				}
+			}
+		}
+	   
+		/* 打开根文件夹 */
+		result = f_opendir(&DirInf, "/"); 
+		if (result != FR_OK)
+		{
+			/* 卸载文件系统 */
+		  f_mount(0, NULL);
+			return -3;
+		}
+	   
+		/* 打开文件 */
+		result = f_open(&file, file_name, FA_OPEN_EXISTING | FA_READ);
+		if (result !=  FR_OK)
+		{
+		  /* 卸载文件系统 */
+		  f_mount(0, NULL);
+	   /* 文件不存在 */
+			return -4;
+		}
+	/* 读取文件 */
+			  
+		if(bw > 0)
+        {
+        result = f_read(&file, sd_data, 4,&bw);
+            /* 关闭文件*/
+            f_close(&file);
+            /* 卸载文件系统 */
+            f_mount(0, NULL);
+            return 1;
+        }
+        else
+        {
+            /* 关闭文件*/
+            f_close(&file);
+            /* 卸载文件系统 */
+            f_mount(0, NULL);
+            return -4;
+        }
+			  /* 关闭文件*/
+			  f_close(&file);
+				 /* 卸载文件系统 */
+			  f_mount(0, NULL);
+			  return -5;
+#endif  //end of MAV_LOG_TSET
+
+
+}
 ///for rc
-#define PPM_ZERO_CENTRE 1500  //平衡零点
+#define PPM_ZERO_CENTRE 1514  //平衡零点
 #define PPM_ZERO 982
 #define PPM_RANGE 851 //820
 #define PPM_MIN 173
@@ -387,6 +595,8 @@ u8 test_flag_chan12=0;
 u8 test_flag_chan16=0;
 
 u16 key_safe_last=0;
+u16 key_again=0;
+
 typedef struct __smart_item_s
 {
     u8 last;
@@ -394,7 +604,7 @@ typedef struct __smart_item_s
 } smart_item_s;
 
 smart_item_s smart_item;
-
+u8 file_result;
 
 void handleMessage(mavlink_message_t* msg)
 {
@@ -474,17 +684,21 @@ void handleMessage(mavlink_message_t* msg)
 
             if(rc_channels.chan5_raw==PPM_ZERO)  //A  982
             {
-                coord_gloableA = coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000),(((double)gps_raw_int.alt )/10000000));
-
+                coord_gloableA = coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000),(((double)gps_raw_int.alt )/1000));
+				coord_gloableA.altitude-=coord_gloableHome.altitude;//换为相对高度,单位m
+							if(coord_gloableB.altitude>15)coord_gloableA.altitude=15;
+							if(coord_gloableB.altitude<5)coord_gloableA.altitude=5;
+//coord_gloableA.altitude=local_position_ned.z;
+							fight_angle=attitude.yaw*M_RAD_TO_DEG;
                 printf("gps_raw_A===%d  %d    %d\r\n",gps_raw_int.lat,gps_raw_int.lon,gps_raw_int.alt);
             }
             else if(rc_channels.chan5_raw==PPM_MAX)//B  2046
             {
-                coord_gloableB= coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000),(((double)gps_raw_int.alt )/10000000));
+                coord_gloableB= coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000),(((double)gps_raw_int.alt )/1000));
                 coord_gloableB.altitude-=coord_gloableHome.altitude;//换为相对高度
-                if(coord_gloableB.altitude>10)coord_gloableB.altitude=10;
-                if(coord_gloableB.altitude<4)coord_gloableB.altitude=4;
-
+                if(coord_gloableB.altitude>15)coord_gloableB.altitude=15;
+                if(coord_gloableB.altitude<5)coord_gloableB.altitude=5;
+//coord_gloableB.altitude=local_position_ned.z;
                 printf("gps_raw_B===%d	%d	  %d\r\n",gps_raw_int.lat,gps_raw_int.lon,gps_raw_int.alt);
             }
 
@@ -492,7 +706,7 @@ void handleMessage(mavlink_message_t* msg)
             if(rc_channels.chan7_raw  !=key_safe_last)  //A  982
             {
                 if(coord_gloableHome.altitude==0)
-                    coord_gloableHome = coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000),(((double)gps_raw_int.alt )/10000000));
+                    coord_gloableHome = coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000),(((double)gps_raw_int.alt )/1000));
             }
             key_safe_last=rc_channels.chan7_raw;
             if(rc_channels.chan11_raw==PPM_MAX)  //c1  2046
@@ -504,7 +718,6 @@ void handleMessage(mavlink_message_t* msg)
                 test_flag_chan11=0;
                 polygon_set_AB(  coord_gloableA,  coord_gloableB, 0);
                 printf(" c1 get\r\n");
-
             }
             if(rc_channels.chan12_raw==PPM_MAX)    //c2 2046
             {
@@ -518,10 +731,20 @@ void handleMessage(mavlink_message_t* msg)
             }
             switch (rc_channels.chan8_raw)
             {
-                case PPM_MAX:
+                case PPM_ZERO_CENTRE:
+					if(key_again==0)
+					{
+					key_again++;
                     smart_item.last=mission_current.seq;
+//					smart_item.current++;
+					sd_data[0]= smart_item.last ;
+					file_result= save_data();	
+					printf(" file_result=%d  smart_item get\r\n",file_result);
+					}
                     break;
                 default:
+					//if(key_again)
+					key_again=0;
                     break;
             }
 
@@ -569,21 +792,31 @@ void handleMessage(mavlink_message_t* msg)
             else if(test_flag_chan9==1)  //按两次
             {
                 test_flag_chan9=0;
-                //  mavlink_msg_set_mode_send(MAVLINK_COMM_0, 1, 157, 157);//开始任务 9D=
+                //  mavlink_msg_set_mode_send(MAVLINK_COMM_0, 1, 157, 157);//开始任务 9D
+                if(heartbeat.system_status==MAV_STATE_ACTIVE)//起飞状态才执行
                 mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
             }
             if(rc_channels.chan16_raw==PPM_MAX)  //test   1键开始任务
             {
-                test_flag_chan16=1;
-//                waypoint_test();
-            }
-            else if(test_flag_chan16==1)  //按两次
-            {
-                test_flag_chan16=0;
+              
+				if(test_flag_chan16==0)
+				{
+				sd_data[0]=0;
+				file_result=read_data();
+				printf(" file_result=%d     \r\n",file_result);
+				smart_item.last=sd_data[0];
+				 printf("last %d \r\n",smart_item.last);
                 mission_start.param1=smart_item.last;
                 //  mavlink_msg_set_mode_send(MAVLINK_COMM_0, 1, 157, 157);//开始任务 9D=
                 mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
                 mission_start.param1=0;
+				}  
+				test_flag_chan16++;
+
+            }
+            else  
+            {
+				test_flag_chan16=0;
             }
             break;
         }

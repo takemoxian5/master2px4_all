@@ -354,24 +354,11 @@ coord_t coord_gloableA,coord_gloableB,coord_gloableHome;
 float grid_angle;
 u8 grid_space=6; //喷洒间距
 
+float fight_angle;
 
 
 
 
-// These defines are private
-#ifndef M_PI
-#define M_PI (3.14159265358979323846)
-#endif
-#define M_DEG_TO_RAD (M_PI / 180.0)
-#define M_RAD_TO_DEG (180.0 / M_PI)
-#define CONSTANTS_ONE_G                 9.80665f        /* m/s^2        */
-#define CONSTANTS_AIR_DENSITY_SEA_LEVEL_15C     1.225f          /* kg/m^3       */
-#define CONSTANTS_AIR_GAS_CONST             287.1f          /* J/(kg * K)       */
-#define CONSTANTS_ABSOLUTE_NULL_CELSIUS         -273.15f        /* °C          */
-#define CONSTANTS_RADIUS_OF_EARTH           6371000         /* meters (m)       */
-
-
-#define epsilon 0.00000001   //精度
 
 coord_t convertNedToGeo( coord_t origin,coordNed_t distance
 // , double* x, double* y, double* z
@@ -406,7 +393,7 @@ coord_t convertNedToGeo( coord_t origin,coordNed_t distance
 
     coord_temp.latitude = lat_rad * M_RAD_TO_DEG;
     coord_temp.longitude =lon_rad * M_RAD_TO_DEG;
-    coord_temp.altitude= origin.altitude;//+distance.z  ;
+    coord_temp.altitude= origin.altitude+distance.z  ;
     return coord_temp;
 }
 
@@ -558,7 +545,7 @@ void send_one_Waypoint(u8 seq_cnt,coord_t coord_temp)
 					   0,				   //			   float param1,
 					   0,				   //			   float param2,
 					   0,				   //			   float param3,
-					   grid_angle,				   //			   float param4,   angle,只设置第一点即可
+					   fight_angle,// grid_angle,				   //			   float param4,   angle,只设置第一点即可
 					   coord_temp.latitude,					   //			   float x,
 					   coord_temp.longitude, 				   //			   float y,
 					   coord_temp.altitude					   //			   float z
@@ -588,18 +575,25 @@ void send_one_Waypoint(u8 seq_cnt,coord_t coord_temp)
 //Start G2018011813141 CY128  $AB 点误操作，判断
 		 if(grid_distance.dist<10||grid_distance.dist>200)
 {
-			 printf("grid_distance==%d \r\n",grid_distance.dist);
-
+			printf("grid_distance==%d \r\n",grid_distance.dist);
 		 	return;
 }
 //End G2018011813141 CY128 
 u32 grid_angle_temp;
 		 grid_angle = (atan2(grid_distance.y, grid_distance.x) * M_RAD_TO_DEG);
-		 grid_angle_temp=(u32)(grid_angle*100)%36000;
-		 grid_angle=grid_angle_temp/100;
+
 		 printf("grid_angle==%f \r\n",grid_angle);
 		 grid_dist_vert.x=grid_space*cos((grid_angle-90)*M_DEG_TO_RAD);
 		 grid_dist_vert.y=grid_space*sin((grid_angle-90)*M_DEG_TO_RAD);
+		 		 grid_angle_temp=(int)(90-grid_angle+360)%360;
+				 
+//		 grid_angle=90-grid_angle_temp;
+//		 if (grid_angle > 90.0) {
+//			 grid_angle -= 180.0;
+//		 } else if (grid_angle < -90.0) {
+//			 grid_angle += 180;
+//		 }
+
  if(direction==0)  //左边,方向只改变 垂直向量 方向
  {
 		 grid_dist_vert.x=-grid_dist_vert.x;
@@ -607,9 +601,8 @@ u32 grid_angle_temp;
  }
 		 grid_distance_op.x=-grid_distance.x;
 		 grid_distance_op.y=-grid_distance.y;
+		 grid_distance_op.z=-grid_distance.z;
 		 printf("grid_dist_vertx==%f,grid_dist_verty==%f ,grid_dist_verty==%f\r\n",grid_dist_vert.x,grid_dist_vert.y,grid_dist_vert.z);
-
-
 //Start G2018011213141 CY128  send count
 		 mavlink_mission_count_t packet;
 		  packet.count = ABWAYPOINT_PLUS;
@@ -621,11 +614,10 @@ u32 grid_angle_temp;
 		  // transfer geo
 			  coord_temp[0]=coord_A;
 			  coord_temp[1]=coord_B;
-
 //		  send_one_Waypoint(seq_cnt++,coord_A);
 //		  send_one_Waypoint(seq_cnt++,coord_B);
 
-	 
+
 	  for (	i = 2 ; i <ABWAYPOINT_PLUS+2 ; i++ )
 	 {
 			  switch (i%4)
@@ -633,7 +625,7 @@ u32 grid_angle_temp;
 		   case 0: //v+
 		   //奇数点
 				 {
-			   coord_temp[i%4]=convertNedToGeo(coord_temp[(i+3)%4],grid_dist_vert);
+			     coord_temp[i%4]=convertNedToGeo(coord_temp[(i+3)%4],grid_dist_vert);
 					   break;
 				 }
 		   case 1: //d+
@@ -655,9 +647,7 @@ u32 grid_angle_temp;
  //   printf("coord_tempx==%f,coord_tempy==%f ,coord_tempz==%f\r\n",coord_temp[i].latitude,coord_temp[i].longitude,coord_temp[i].altitude);
 	 send_one_Waypoint(seq_cnt++,coord_temp[i%4]);
 	 }
- 
  }
-
  void waypoint_test(void)
 {
 	coord_t coord_A,coord_B;

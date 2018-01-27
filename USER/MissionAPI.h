@@ -12,9 +12,22 @@ void Inner_Loop(float);
 
 void Outer_Loop(float);
 
+// These defines are private
+#ifndef M_PI
+#define M_PI (3.14159265358979323846)
+#endif
+#define M_DEG_TO_RAD (M_PI / 180.0)
+#define M_RAD_TO_DEG (180.0 / M_PI)
+#define CONSTANTS_ONE_G                 9.80665f        /* m/s^2        */
+#define CONSTANTS_AIR_DENSITY_SEA_LEVEL_15C     1.225f          /* kg/m^3       */
+#define CONSTANTS_AIR_GAS_CONST             287.1f          /* J/(kg * K)       */
+#define CONSTANTS_ABSOLUTE_NULL_CELSIUS         -273.15f        /* °C          */
+#define CONSTANTS_RADIUS_OF_EARTH           6371000         /* meters (m)       */
 
 
+#define epsilon 0.00000001   //精度
 
+extern float fight_angle;
 
 typedef struct
 {
