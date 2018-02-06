@@ -19,7 +19,7 @@
 #include "OpenTel_Mavlink.h"
 #include "testsuite.h"
 #include "MissionAPI.h"	
-
+#include "pwm_out.h"
 //#include "cppforstm32.h"
 #ifdef __cplusplus
 extern "C" {
@@ -89,6 +89,7 @@ char  test_cntxx[20];
  *
  */
  uint8_t            system_id=6,component_id= 0;
+u8 pwmcnt=0;
 int main(void)
 {
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);//中断优先级组别设置
@@ -100,7 +101,7 @@ int main(void)
     TIM3_Int_Init(0xFFFF,8400-1);   //��ʱ��ʱ��84M����Ƶϵ��8400������84M/8400=10Khz�ļ���Ƶ��
     
     Cycle_Time_Init();
-    
+    PWM_Out_Init(400);				//初始化电调输出功能
     printf("STM32F4Discovery Board initialization finished!\r\n");
 
     mavlink_system.sysid =6;//MAV_TYPE_GCS;// MAV_TYPE_GCS=6地面站角色 MAV_TYPE_FIXED_WING;//MAV_TYPE_GENERIC;
@@ -285,8 +286,13 @@ int main(void)
             }
 			else if(sysTickUptime % 1000==5)
             {
-
-
+				
+if (sysTickUptime % 1000==6)
+{
+//pwmcnt++;
+//TIM1->CCR2 =8400;				//5	
+//TIM1->CCR3 = 8399;				//6	
+}
 
 //				  printf("\r\narmfly1.txt   : \r\n%s\r\n", textFileBuffer2);
 //                  printf("\r\narmfly2.txt   : \r\n%d\r\n", textFileBuffer2[0]);

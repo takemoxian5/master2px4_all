@@ -207,3 +207,6 @@ void TIM3_Int_Init(u16 arr,u16 psc)
 	TIM_TimeBaseInit(TIM3,&TIM_TimeBaseInitStructure);//≥ı ºªØTIM3
 }
 
+void _TIM3_IRQHandler(void)	
+{
+}

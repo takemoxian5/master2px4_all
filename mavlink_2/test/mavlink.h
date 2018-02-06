@@ -29,6 +29,6 @@
 #endif
 
 #include "version.h"
-#include "test.h"
+//#include "test.h"
 
 #endif // MAVLINK_H

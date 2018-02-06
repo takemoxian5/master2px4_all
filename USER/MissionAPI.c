@@ -48,16 +48,6 @@ void Duty_2ms()
 
     test[0] = GetSysTime_us()/1000000.0f;
 
-//  MPU6050_Read();                                                             //读取mpu6轴传感器
-
-//  MPU6050_Data_Prepare( inner_loop_time );            //mpu6轴传感器数据处理
-
-//  CTRL_1( inner_loop_time );                                      //内环角速度控制。输入：执行周期，期望角速度，测量角速度，角度前馈；输出：电机PWM占空比。<函数未封装>
-
-//  RC_Duty( inner_loop_time , Rc_Pwm_In );             // 遥控器通道数据处理 ，输入：执行周期，接收机pwm捕获的数据。
-
-
-
     test[1] = GetSysTime_us()/1000000.0f;
 }
 
@@ -350,13 +340,20 @@ static void waypoint_send(uint8_t system_id, uint8_t component_id, mavlink_messa
 
 }
 
-coord_t coord_gloableA,coord_gloableB,coord_gloableHome;
+coord_t coord_gloableA,coord_gloableB,coord_gloableLast,coord_gloableHome;
 float grid_angle;
-u8 grid_space=6; //喷洒间距
 
+float gfAltitude=6.0000000;//全局变量，待移至 include
+#define  WAYPOINT_SIZE  10
+#define  ABWAYPOINT_SIZE  50
+#define  ABWAYPOINT_PLUS  100
 float fight_angle;
 
-
+//作业参数 ，待移到SD卡
+u8 grid_pwm=50;
+u8 grid_space=6; //喷洒间距
+u8 grid_speed=5;
+//u8 grid_space=6; //喷洒间距
 
 
 
@@ -397,9 +394,9 @@ coord_t convertNedToGeo( coord_t origin,coordNed_t distance
     return coord_temp;
 }
 
-coordNed_t convertGeoToNed(coord_t origin,coord_t coord     //左边参考起点，右边当前点
+coordNed_t convertGeoToNed(coord_t origin,coord_t coord  )   //左边参考起点，右边当前点
 // , double* x, double* y, double* z
-                          )
+                          
 {
     coordNed_t coord_temp;
     double lat_rad = coord.latitude * M_DEG_TO_RAD;
@@ -448,10 +445,7 @@ void polygon_to_NED()
 
 }
 #endif  //end of MAV_LOG_TSET
-float gfAltitude=6.0000000;//全局变量，待移至 include
-#define  WAYPOINT_SIZE  10
-#define  ABWAYPOINT_SIZE  50
-#define  ABWAYPOINT_PLUS  100
+
 
 
 
@@ -747,6 +741,5 @@ u32 grid_angle_temp;
 	 }
 #endif
  }
-
 
 

@@ -687,7 +687,6 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
                     if (rxmsg->len != MAVLINK_MESSAGE_LENGTH(rxmsg->msgid))
                     {
 //						printf("len=%d\r\n",rxmsg->len);
-
 			_mav_parse_error(status);
 			status->parse_state = MAVLINK_PARSE_STATE_IDLE;
 			break;

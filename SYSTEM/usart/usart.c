@@ -38,6 +38,7 @@ uint8_t uart_tx_buf[UART_TX_BUFFER_SIZE], uart_rx_buf[UART_RX_BUFFER_SIZE];
 
 
 
+//#define open_print
 
 
 #if 1
@@ -58,11 +59,17 @@ FILE __stdout;
 //重定义fputc函数
 int fputc(int ch, FILE *f)
 {
+#ifdef open_print
     USART_SendData(USART1, (unsigned char) ch);
 
     while (!(USART1->SR & USART_FLAG_TXE));
 
     return (ch);
+#endif
+
+
+
+	
 //  while((USART1->SR&0X40)==0);//循环发送,直到发送完毕
 //  USART1->DR = (u8) ch;
 //  return ch;
@@ -93,6 +100,7 @@ extern "C" {
 
 void USART1_Gpio_Config(void)
 {
+#ifdef open_print
     GPIO_InitTypeDef GPIO_InitStructure;
 
     RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOA, ENABLE);
@@ -106,6 +114,7 @@ void USART1_Gpio_Config(void)
 
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_USART1);     //tx
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_USART1);     //rx
+#endif  //end of MAV_LOG_TSET
 
 }
 
@@ -115,7 +124,7 @@ void USART2_Gpio_Config(void)
 
     RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOA, ENABLE);
 
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2 | GPIO_Pin_3;
+    GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_2 | GPIO_Pin_3;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
@@ -150,6 +159,7 @@ void USART3_Gpio_Config(void)
  */
 void USART1_Config(void)
 {
+#ifdef open_print
     USART1_Gpio_Config();
 
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
@@ -169,6 +179,7 @@ void USART1_Config(void)
 
     while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) != SET)
         ;
+#endif  //end of open_print
 }
 
 /*
@@ -243,12 +254,14 @@ void USARTxNVIC_Config()
     NVIC_InitStructure_USART2.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure_USART2);
 
+#ifdef open_print
     NVIC_InitTypeDef NVIC_InitStructure_USART1;
     NVIC_InitStructure_USART1.NVIC_IRQChannelPreemptionPriority = 0x04;
     NVIC_InitStructure_USART1.NVIC_IRQChannelSubPriority = 0x04;
     NVIC_InitStructure_USART1.NVIC_IRQChannel = USART1_IRQn;
     NVIC_InitStructure_USART1.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure_USART1);
+#endif
 }
 
 void UsartConfig()
