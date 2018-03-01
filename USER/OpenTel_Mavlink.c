@@ -335,16 +335,22 @@ SetPwm(grid_pwm);
 SetPwm(grid_pwm);
 
 }
-
+u8 retrun_check_AB_flag=0;
 void retrun_check_AB(u16 seq, u16 voltage_battery)
 {
+        mavlink_command_long_t mission_start= {0};
+
+    mission_start.target_system=1;
+    mission_start.target_component=0;
+    mission_start.confirmation=true;
+    mission_start.command=MAV_CMD_MISSION_START;
+    mission_start.param1=0;
+    mission_start.param2=5;
 if(voltage_battery>42500)return;
-	if(seq%4==2)// A 点附近  2. 6. 10
+	if(seq%4==2&&retrun_check_AB_flag==0)// A 点附近  2. 6. 10
 	{
-						mission_start.command=MAV_CMD_MISSION_START;
-						mission_start.param1=0;
-						mission_start.param2=0;
-                        mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
+    retrun_check_AB_flag=1;
+    mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
 	}
 }
 
@@ -385,8 +391,6 @@ void update(void)
 //               &&msg.msgid!=24 //gps_raw_int
 //               &&msg.msgid!=42 //mission CURRENT
 //               &&msg.msgid!=77 //COMMAND_ACK
-
-
 //              )
                 printf("new msg msgid======+========================%d====get!\r\n",msg.msgid);
 
