@@ -19,7 +19,7 @@
 #include "OpenTel_Mavlink.h"
 #include "testsuite.h"
 #include "MissionAPI.h"	
-
+#include "pwm_out.h"
 //#include "cppforstm32.h"
 #ifdef __cplusplus
 extern "C" {
@@ -85,12 +85,11 @@ void delay(void)
 #ifdef DEBUG_SEND_MSG
 char  test_cntxx[20];
 #endif
-
-
 /*
  *
  */
  uint8_t            system_id=6,component_id= 0;
+u8 pwmcnt=0;
 int main(void)
 {
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);//中断优先级组别设置
@@ -98,11 +97,11 @@ int main(void)
 	SysTick_Configuration(); 	//滴答时钟
     delay_init(168);      // 延时
     serial_open(0, 0);
-    Para_Init();							//参数初始化
+//    Para_Init();							//参数初始化
     TIM3_Int_Init(0xFFFF,8400-1);   //��ʱ��ʱ��84M����Ƶϵ��8400������84M/8400=10Khz�ļ���Ƶ��
     
     Cycle_Time_Init();
-    
+    PWM_Out_Init(400);				//初始化电调输出功能
     printf("STM32F4Discovery Board initialization finished!\r\n");
 
     mavlink_system.sysid =6;//MAV_TYPE_GCS;// MAV_TYPE_GCS=6地面站角色 MAV_TYPE_FIXED_WING;//MAV_TYPE_GENERIC;
@@ -118,10 +117,9 @@ int main(void)
 	servo_output_raw->servo7_raw = 950;
 	servo_output_raw->servo8_raw = 1550;
 	servo_output_raw->port = 1;
-
 	
 	mavlink_command_long_t com = { 0 };
-	mavlink_set_mode_t set_mode={0};
+	mavlink_set_mode_t  set_mode={0};
 	mavlink_command_long_t take_off_local={0};
 	mavlink_command_long_t take_off={0};
 	mavlink_command_long_t land={0};
@@ -160,12 +158,12 @@ int main(void)
 	com.param1           = 4; // flag >0.5 => start, <0.5 => stop
 	com.param2           = 1314; // flag >0.5 => start, <0.5 => stop
 	
-//	set_mode.target_system=1;
-//	set_mode.base_mode=MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-//	set_mode.custom_mode=4;
-	set_mode.custom_mode=220;
 	set_mode.target_system=1;
-	set_mode.base_mode=220;//MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+	set_mode.custom_mode=4;
+    set_mode.base_mode=MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+//	set_mode.custom_mode=220;
+//	set_mode.target_system=1;
+//	set_mode.base_mode=220;//MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 		
 	take_off_local.target_system=1;
 	take_off_local.target_component=0;
@@ -178,18 +176,28 @@ int main(void)
 	take_off_local.param6=0;
 	take_off_local.param7=5;
 	
+//	ROI.target_system=1;
+//	ROI.target_component=190;
+//	ROI.confirmation=true;
+//	ROI.command=MAV_CMD_DO_SET_SERVO;
+//	ROI.param1=1;
+//	ROI.param2=1010;
+//	ROI.param3=0;
+//	ROI.param4=0;
+//	ROI.param5=0;
+//	ROI.param6=0;
+//	ROI.param7=0;
 	ROI.target_system=1;
 	ROI.target_component=190;
 	ROI.confirmation=true;
-	ROI.command=MAV_CMD_DO_SET_SERVO;
-	ROI.param1=1;
-	ROI.param2=1010;
-	ROI.param3=0;
+	ROI.command=MAV_CMD_DO_MOUNT_CONTROL;
+	ROI.param1=150;
+	ROI.param2=40;
+	ROI.param3=200;
 	ROI.param4=0;
 	ROI.param5=0;
 	ROI.param6=0;
-	ROI.param7=0;
-	
+	ROI.param7=0;	//MAV_MOUNT_MODE
 	take_off.target_system=1;
 	take_off.target_component=0;
 	take_off.confirmation=true;
@@ -276,34 +284,20 @@ int main(void)
 //                mavlink_send_message(0, MSG_AHRS, 0);
 //                mavlink_test_minimal(15, 7, msg);
             }
-			else if(sysTickUptime % 200==5)
+			else if(sysTickUptime % 1000==5)
             {
+				
+if(sysTickUptime % 1000==6)
+{ 
+}
 
+//				  printf("\r\narmfly1.txt   : \r\n%s\r\n", textFileBuffer2);
+//                  printf("\r\narmfly2.txt   : \r\n%d\r\n", textFileBuffer2[0]);
+//				  printf("\r\narmfly3.txt	: \r\n%d\r\n", textFileBuffer2[1]);
+//				  printf("\r\narmfly4.txt	: \r\n%d\r\n", textFileBuffer2[2]);
 
-//uint8_t            system_id=mavlink_msg_mission_count_get_target_system(msg);
-//uint8_t			 component_id=  mavlink_msg_mission_count_get_target_component(msg);
+//			Param_SavePID();
 
-//mavlink_test_set_mode(system_id, component_id, last_msg);
-
-//			mavlink_test_mission_count(system_id, component_id, last_msg);
-//			mavlink_test_mission_item(system_id, component_id, last_msg);
-
-
-//waypoint_test();
-
-
-
-//	mavlink_test_mission_request_partial_list(system_id, component_id, last_msg);
-//    mavlink_test_mission_write_partial_list(system_id, component_id, last_msg);
-//    mavlink_test_mission_item(system_id, component_id, last_msg);
-//    mavlink_test_mission_request(system_id, component_id, last_msg);
-//    mavlink_test_mission_set_current(system_id, component_id, last_msg);
-//    mavlink_test_mission_current(system_id, component_id, last_msg);
-//    mavlink_test_mission_request_list(system_id, component_id, last_msg);
-//    mavlink_test_mission_count(system_id, component_id, last_msg);
-//    mavlink_test_mission_clear_all(system_id, component_id, last_msg);
-//    mavlink_test_mission_item_reached(system_id, component_id, last_msg);
-//    mavlink_test_mission_ack(system_id, component_id, last_msg);
 			}
             update();
 //			remote_update();

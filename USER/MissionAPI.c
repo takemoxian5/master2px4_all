@@ -48,16 +48,6 @@ void Duty_2ms()
 
     test[0] = GetSysTime_us()/1000000.0f;
 
-//  MPU6050_Read();                                                             //读取mpu6轴传感器
-
-//  MPU6050_Data_Prepare( inner_loop_time );            //mpu6轴传感器数据处理
-
-//  CTRL_1( inner_loop_time );                                      //内环角速度控制。输入：执行周期，期望角速度，测量角速度，角度前馈；输出：电机PWM占空比。<函数未封装>
-
-//  RC_Duty( inner_loop_time , Rc_Pwm_In );             // 遥控器通道数据处理 ，输入：执行周期，接收机pwm捕获的数据。
-
-
-
     test[1] = GetSysTime_us()/1000000.0f;
 }
 
@@ -211,7 +201,6 @@ void item_pack(mavlink_mission_item_t* msg,
 {
     mavlink_mission_item_t packet;
 
-
     msg->param1 = param1;
     msg->param2 = param2;
     msg->param3 = param3;
@@ -221,9 +210,9 @@ void item_pack(mavlink_mission_item_t* msg,
     msg->z = z;
     msg->seq = seq;
     msg->command = command;
-    msg->target_system = 1;
-    msg->target_component = 190;
-    msg->frame = command ==MAV_CMD_NAV_WAYPOINT ? 3:2;  //global_relative=3 ,mission=2
+    msg->target_system = gc_target_system;
+    msg->target_component = gc_target_component;
+    msg->frame = 3;//command ==MAV_CMD_NAV_WAYPOINT ? 3:2;  //global_relative=3 ,mission=2
     msg->current = seq ==0? 1:0;  //set current at first point              //G201801111281 ChenYang
     msg->autocontinue = true;
     msg->mission_type = 0;
@@ -351,27 +340,22 @@ static void waypoint_send(uint8_t system_id, uint8_t component_id, mavlink_messa
 
 }
 
-coord_t coord_gloableA,coord_gloableB;
+coord_t coord_gloableA,coord_gloableB,coord_gloableLast,coord_gloableHome;
 float grid_angle;
+
+float gfAltitude=6.0000000;//全局变量，待移至 include
+#define  WAYPOINT_SIZE  10
+#define  ABWAYPOINT_SIZE  50
+#define  ABWAYPOINT_PLUS  100
+float fight_angle;
+
+//作业参数 ，待移到SD卡
+u8 grid_pwm=50;
 u8 grid_space=6; //喷洒间距
+u8 grid_speed=5;
+//u8 grid_space=6; //喷洒间距
 
 
-
-
-// These defines are private
-#ifndef M_PI
-#define M_PI (3.14159265358979323846)
-#endif
-#define M_DEG_TO_RAD (M_PI / 180.0)
-#define M_RAD_TO_DEG (180.0 / M_PI)
-#define CONSTANTS_ONE_G                 9.80665f        /* m/s^2        */
-#define CONSTANTS_AIR_DENSITY_SEA_LEVEL_15C     1.225f          /* kg/m^3       */
-#define CONSTANTS_AIR_GAS_CONST             287.1f          /* J/(kg * K)       */
-#define CONSTANTS_ABSOLUTE_NULL_CELSIUS         -273.15f        /* °C          */
-#define CONSTANTS_RADIUS_OF_EARTH           6371000         /* meters (m)       */
-
-
-#define epsilon 0.00000001   //精度
 
 coord_t convertNedToGeo( coord_t origin,coordNed_t distance
 // , double* x, double* y, double* z
@@ -406,13 +390,13 @@ coord_t convertNedToGeo( coord_t origin,coordNed_t distance
 
     coord_temp.latitude = lat_rad * M_RAD_TO_DEG;
     coord_temp.longitude =lon_rad * M_RAD_TO_DEG;
-    coord_temp.altitude= distance.z + origin.altitude;
+    coord_temp.altitude= origin.altitude+distance.z  ;
     return coord_temp;
 }
 
-coordNed_t convertGeoToNed(coord_t origin,coord_t coord     //左边参考起点，右边当前点
+coordNed_t convertGeoToNed(coord_t origin,coord_t coord  )   //左边参考起点，右边当前点
 // , double* x, double* y, double* z
-                          )
+                          
 {
     coordNed_t coord_temp;
     double lat_rad = coord.latitude * M_DEG_TO_RAD;
@@ -461,10 +445,7 @@ void polygon_to_NED()
 
 }
 #endif  //end of MAV_LOG_TSET
-float gfAltitude=25.0000000;//全局变量，待移至 include
-#define  WAYPOINT_SIZE  10
-#define  ABWAYPOINT_SIZE  50
-#define  ABWAYPOINT_PLUS  100
+
 
 
 
@@ -477,12 +458,12 @@ float gfAltitude=25.0000000;//全局变量，待移至 include
   Return:            coord_t    //send count
   Others:            none
 ****************************************************************************/
-coord_t coord_set(double latitude,double longitude)
+coord_t coord_set(double latitude,double longitude,double altitude)
 {
     coord_t coord_temp;
     coord_temp.latitude  =      latitude;               //              float x,
     coord_temp.longitude =      longitude;              //              float y,
-    coord_temp.altitude  =      gfAltitude;             //              float z
+    coord_temp.altitude  =      altitude;             //              float z
     return coord_temp;
 }
 
@@ -491,6 +472,10 @@ coord_t coord_set(double latitude,double longitude)
 MAV_CMD_NAV_TAKEOFF=22
 
 #endif
+
+
+
+
 	void send_one_cmd_long(mavlink_command_long_t* msg, uint16_t command,  
 	uint8_t confirmation,  // 0 first tansmission of this
 	float param1, float param2, float param3, float param4, float param5, float param6, float param7)
@@ -526,6 +511,24 @@ MAV_CMD_NAV_TAKEOFF=22
 		_mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_COMMAND_LONG, (const char *)&packet1, MAVLINK_MSG_ID_COMMAND_LONG_MIN_LEN, MAVLINK_MSG_ID_COMMAND_LONG_LEN, MAVLINK_MSG_ID_COMMAND_LONG_CRC);
 
 	}
+	void send_one_cmd(u8 seq_cnt,coord_t coord_temp,uint16_t command,
+		float param1, float param2, float param3, float param4
+	)
+	{
+		mavlink_mission_item_t packet_item;
+				   item_pack( &packet_item,
+						   seq_cnt,
+						   MAV_CMD_NAV_WAYPOINT,				   //			   uint16_t command,
+						   param1,				   //			   float param1,
+						   param2,				   //			   float param2,
+						   param3,				   //			   float param3,
+						   param4,				   //			   float param4,   angle,只设置第一点即可
+						   coord_temp.latitude, 				   //			   float x,
+						   coord_temp.longitude,				   //			   float y,
+						   coord_temp.altitude					   //			   float z
+						 );
+		_mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_MISSION_ITEM, (const char *)&packet_item, MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN, MAVLINK_MSG_ID_MISSION_ITEM_LEN, MAVLINK_MSG_ID_MISSION_ITEM_CRC);
+	}
 
 void send_one_Waypoint(u8 seq_cnt,coord_t coord_temp)
 {
@@ -536,7 +539,7 @@ void send_one_Waypoint(u8 seq_cnt,coord_t coord_temp)
 					   0,				   //			   float param1,
 					   0,				   //			   float param2,
 					   0,				   //			   float param3,
-					   grid_angle,				   //			   float param4,   angle,只设置第一点即可
+					   fight_angle,// grid_angle,				   //			   float param4,   angle,只设置第一点即可
 					   coord_temp.latitude,					   //			   float x,
 					   coord_temp.longitude, 				   //			   float y,
 					   coord_temp.altitude					   //			   float z
@@ -563,46 +566,60 @@ void send_one_Waypoint(u8 seq_cnt,coord_t coord_temp)
 		 u8 i;
 
 		 grid_distance=convertGeoToNed(coord_A, coord_B);
+//Start G2018011813141 CY128  $AB 点误操作，判断
+		 if(grid_distance.dist<10||grid_distance.dist>200)
+{
+			printf("grid_distance==%d \r\n",grid_distance.dist);
+		 	return;
+}
+//End G2018011813141 CY128 
+u32 grid_angle_temp;
 		 grid_angle = (atan2(grid_distance.y, grid_distance.x) * M_RAD_TO_DEG);
+
 		 printf("grid_angle==%f \r\n",grid_angle);
 		 grid_dist_vert.x=grid_space*cos((grid_angle-90)*M_DEG_TO_RAD);
 		 grid_dist_vert.y=grid_space*sin((grid_angle-90)*M_DEG_TO_RAD);
- if(direction==0)  //左边
+		 		 grid_angle_temp=(int)(90-grid_angle+360)%360;
+				 
+//		 grid_angle=90-grid_angle_temp;
+//		 if (grid_angle > 90.0) {
+//			 grid_angle -= 180.0;
+//		 } else if (grid_angle < -90.0) {
+//			 grid_angle += 180;
+//		 }
+
+ if(direction==0)  //左边,方向只改变 垂直向量 方向
  {
 		 grid_dist_vert.x=-grid_dist_vert.x;
 		 grid_dist_vert.y=-grid_dist_vert.y;
  }
 		 grid_distance_op.x=-grid_distance.x;
 		 grid_distance_op.y=-grid_distance.y;
+		 grid_distance_op.z=-grid_distance.z;
 		 printf("grid_dist_vertx==%f,grid_dist_verty==%f ,grid_dist_verty==%f\r\n",grid_dist_vert.x,grid_dist_vert.y,grid_dist_vert.z);
-	 // transfer geo
-		 coord_temp[0]=coord_A;
-		 coord_temp[1]=coord_B;
-
-
 //Start G2018011213141 CY128  send count
 		 mavlink_mission_count_t packet;
-				  packet.count = ABWAYPOINT_PLUS;
-				  packet.target_system = 1;
-				  packet.target_component = 190;
-				  packet.mission_type = 0;
-				  _mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_MISSION_COUNT, (const char *)&packet, MAVLINK_MSG_ID_MISSION_COUNT_MIN_LEN, MAVLINK_MSG_ID_MISSION_COUNT_LEN, MAVLINK_MSG_ID_MISSION_COUNT_CRC);
+		  packet.count = ABWAYPOINT_PLUS;
+		  packet.target_system = 1;
+		  packet.target_component = 190;
+		  packet.mission_type = 0;
+		  _mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_MISSION_COUNT, (const char *)&packet, MAVLINK_MSG_ID_MISSION_COUNT_MIN_LEN, MAVLINK_MSG_ID_MISSION_COUNT_LEN, MAVLINK_MSG_ID_MISSION_COUNT_CRC);
 //End G2018011213141 CY128 
-				  coord_temp[0]=coord_A;
-				  coord_temp[1]=coord_B;
+		  // transfer geo
+			  coord_temp[0]=coord_A;
+			  coord_temp[1]=coord_B;
+//		  send_one_Waypoint(seq_cnt++,coord_A);
+//		  send_one_Waypoint(seq_cnt++,coord_B);
 
-		  send_one_Waypoint(seq_cnt++,coord_A);
-		  send_one_Waypoint(seq_cnt++,coord_B);
 
-	 
-	  for (	i = 2 ; i <ABWAYPOINT_PLUS ; i++ )
+	  for (	i = 2 ; i <ABWAYPOINT_PLUS+2 ; i++ )
 	 {
 			  switch (i%4)
 		 {
 		   case 0: //v+
 		   //奇数点
 				 {
-			   coord_temp[i%4]=convertNedToGeo(coord_temp[(i+3)%4],grid_dist_vert);
+			     coord_temp[i%4]=convertNedToGeo(coord_temp[(i+3)%4],grid_dist_vert);
 					   break;
 				 }
 		   case 1: //d+
@@ -624,16 +641,13 @@ void send_one_Waypoint(u8 seq_cnt,coord_t coord_temp)
  //   printf("coord_tempx==%f,coord_tempy==%f ,coord_tempz==%f\r\n",coord_temp[i].latitude,coord_temp[i].longitude,coord_temp[i].altitude);
 	 send_one_Waypoint(seq_cnt++,coord_temp[i%4]);
 	 }
- 
  }
-
- void waypoint_test()
+ void waypoint_test(void)
 {
 	coord_t coord_A,coord_B;
-	coord_A=coord_set(22.5730988,113.5782881); //A
-	coord_B=coord_set(22.5733928,113.5779696); //B
-	polygon_set_AB(  coord_A,  coord_B, 0);
-
+	coord_A=coord_set(22.5730988,113.5782881,gfAltitude); //A
+	coord_B=coord_set(22.5733928,113.5779696,gfAltitude); //B
+	polygon_set_AB(coord_A, coord_B, 0);
 }
  
  void remote_update(void)
@@ -727,6 +741,5 @@ void send_one_Waypoint(u8 seq_cnt,coord_t coord_temp)
 	 }
 #endif
  }
-
 
 

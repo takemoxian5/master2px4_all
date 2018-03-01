@@ -1,5 +1,6 @@
 #ifndef _INCLUDE_H_
 #define _INCLUDE_H_
+#include "ff.h"
 
 #include "stm32f4xx.h"
 #include "MissionAPI.h"
@@ -57,7 +58,7 @@
 
 
 
-
+extern float gfAltitude;
 
 
 

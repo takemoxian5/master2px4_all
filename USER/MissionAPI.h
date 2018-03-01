@@ -12,9 +12,22 @@ void Inner_Loop(float);
 
 void Outer_Loop(float);
 
+// These defines are private
+#ifndef M_PI
+#define M_PI (3.14159265358979323846)
+#endif
+#define M_DEG_TO_RAD (M_PI / 180.0)
+#define M_RAD_TO_DEG (180.0 / M_PI)
+#define CONSTANTS_ONE_G                 9.80665f        /* m/s^2        */
+#define CONSTANTS_AIR_DENSITY_SEA_LEVEL_15C     1.225f          /* kg/m^3       */
+#define CONSTANTS_AIR_GAS_CONST             287.1f          /* J/(kg * K)       */
+#define CONSTANTS_ABSOLUTE_NULL_CELSIUS         -273.15f        /* °C          */
+#define CONSTANTS_RADIUS_OF_EARTH           6371000         /* meters (m)       */
 
 
+#define epsilon 0.00000001   //精度
 
+extern float fight_angle;
 
 typedef struct
 {
@@ -47,16 +60,25 @@ typedef struct
 
 
 
-
+ extern coord_t coord_gloableHome;
  extern coord_t coord_gloableA;
  extern coord_t coord_gloableB;
-  extern float grid_angle;
- extern  u8 grid_space=6; //喷洒间距
+ extern coord_t coord_gloableLast;
+ extern float grid_angle;
+ extern  u8 grid_space; //喷洒间距
+ 
+ extern u8 grid_pwm;
+ extern u8 grid_speed;
 
- void waypoint_test();
+void waypoint_test();
 void polygon_set_AB(coord_t coord_A, coord_t coord_B,u8 direction);
-coord_t coord_set(double latitude,double longitude);
+coord_t coord_set(double latitude,double longitude,double altitude);
+void send_one_cmd(u8 seq_cnt,coord_t coord_temp,uint16_t command,
+	float param1, float param2, float param3, float param4);
 
+//void send_one_cmd_long(mavlink_command_long_t* msg, uint16_t command,  
+//	uint8_t confirmation,  // 0 first tansmission of this
+//	float param1, float param2, float param3, float param4, float param5, float param6, float param7);
 
 
 
