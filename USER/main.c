@@ -287,8 +287,16 @@ int main(void)
 			else if(sysTickUptime % 1000==5)
             {
 				
+<<<<<<< HEAD
 if(sysTickUptime % 1000==6)
 { 
+=======
+if (sysTickUptime % 1000==6)
+{
+//pwmcnt++;
+//TIM1->CCR2 =8400;				//5	
+//TIM1->CCR3 = 8399;				//6	
+>>>>>>> c88468248c9d7881eaec224e9f3ce4d1b8e3b814
 }
 
 //				  printf("\r\narmfly1.txt   : \r\n%s\r\n", textFileBuffer2);

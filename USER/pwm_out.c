@@ -24,17 +24,29 @@ void TIM1_GPIO_Config(void)
   RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA,ENABLE);
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
   GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+<<<<<<< HEAD
   GPIO_InitStructure.GPIO_Pin =  
                                  GPIO_Pin_9 | GPIO_Pin_10  ;
+=======
+  GPIO_InitStructure.GPIO_Pin  =  GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10| GPIO_Pin_11;
+>>>>>>> c88468248c9d7881eaec224e9f3ce4d1b8e3b814
   GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
   GPIO_Init(GPIOA,&GPIO_InitStructure);
   
+<<<<<<< HEAD
 //  GPIO_PinAFConfig(GPIOE,GPIO_PinSource8,GPIO_AF_TIM1); //CH1
   GPIO_PinAFConfig(GPIOA,GPIO_PinSource9,GPIO_AF_TIM1);//CH2
   GPIO_PinAFConfig(GPIOA,GPIO_PinSource10,GPIO_AF_TIM1);
 
 //  GPIO_PinAFConfig(GPIOA,GPIO_PinSource11,GPIO_AF_TIM1);
+=======
+  GPIO_PinAFConfig(GPIOA,GPIO_PinSource8,GPIO_AF_TIM1); //CH1
+  GPIO_PinAFConfig(GPIOA,GPIO_PinSource9,GPIO_AF_TIM1);//CH2
+  GPIO_PinAFConfig(GPIOA,GPIO_PinSource10,GPIO_AF_TIM1);
+
+   GPIO_PinAFConfig(GPIOA,GPIO_PinSource11,GPIO_AF_TIM1);
+>>>>>>> c88468248c9d7881eaec224e9f3ce4d1b8e3b814
 //  GPIO_PinAFConfig(GPIOA,GPIO_PinSource12,GPIO_AF_TIM1);
 //  GPIO_PinAFConfig(GPIOE,GPIO_PinSource13,GPIO_AF_TIM1);
 //  GPIO_PinAFConfig(GPIOE,GPIO_PinSource14,GPIO_AF_TIM1);
@@ -42,12 +54,17 @@ void TIM1_GPIO_Config(void)
 }
 
 //TIM1做PWM输出
+<<<<<<< HEAD
 void Tim1_Config(void)
+=======
+void Tim1_Config(u16 hz)
+>>>>>>> c88468248c9d7881eaec224e9f3ce4d1b8e3b814
 {
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseInitStructure;
 	TIM_OCInitTypeDef  TIM_OCInitStructure;
 	GPIO_InitTypeDef GPIO_InitStructure;
 	u32 TimerPeriod,ccr1,ccr2,ccr3,ccr4;
+<<<<<<< HEAD
 
   TimerPeriod =  (SystemCoreClock / 20000 ) - 1;
 //  ccr1 = TimerPeriod / 2;  //占空比1/2 = 50%
@@ -55,13 +72,35 @@ void Tim1_Config(void)
   ccr3 = TimerPeriod / 8;  //占空比1/4 = 25%
 //  ccr4 = TimerPeriod / 5;  //占空比1/5 = 20%
   
+=======
+	  uint16_t PrescalerValue = 0;
+	  u32 hz_set = ACCURACY*hz;
+	
+	  hz_set = LIMIT (hz_set,1,SystemCoreClock);
+  TimerPeriod =  (SystemCoreClock / 20000 ) - 1;
+//  ccr1 = TimerPeriod / 2;  //占空比1/2 = 50%
+  ccr2 = INIT_DUTY;  //占空比1/3 = 33%
+  ccr3 = INIT_DUTY;  //占空比1/4 = 25%
+//  ccr4 = TimerPeriod / 5;  //占空比1/5 = 20%
+    PrescalerValue = (uint16_t) ( ( SystemCoreClock  ) / hz_set ) - 1;
+>>>>>>> c88468248c9d7881eaec224e9f3ce4d1b8e3b814
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1,ENABLE);
   //时基初始化
   TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1; //死区控制用。
   TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;  //计数器方向
+<<<<<<< HEAD
   TIM_TimeBaseInitStructure.TIM_Prescaler = 0;   //Timer clock = sysclock /(TIM_Prescaler+1) = 168M
   TIM_TimeBaseInitStructure.TIM_RepetitionCounter = 0;
   TIM_TimeBaseInitStructure.TIM_Period = TimerPeriod - 1;    //Period = (TIM counter clock / TIM output clock) - 1 = 20K  50US
+=======
+//  TIM_TimeBaseInitStructure.TIM_Prescaler = 0;   //Timer clock = sysclock /(TIM_Prescaler+1) = 168M
+  TIM_TimeBaseInitStructure.TIM_RepetitionCounter = 0;
+//  TIM_TimeBaseInitStructure.TIM_Period = TimerPeriod - 1;    //Period = (TIM counter clock / TIM output clock) - 1 = 20K  50US
+
+  TIM_TimeBaseInitStructure.TIM_Period = ACCURACY;									
+  TIM_TimeBaseInitStructure.TIM_Prescaler = PrescalerValue;	
+
+>>>>>>> c88468248c9d7881eaec224e9f3ce4d1b8e3b814
   TIM_TimeBaseInit(TIM1,&TIM_TimeBaseInitStructure);
 
   
@@ -92,7 +131,11 @@ void Tim1_Config(void)
 u8 PWM_Out_Init(uint16_t hz)//400hz
 {
 	TIM1_GPIO_Config();
+<<<<<<< HEAD
 	 Tim1_Config();
+=======
+	 Tim1_Config(hz);
+>>>>>>> c88468248c9d7881eaec224e9f3ce4d1b8e3b814
 }
 
 #ifdef open_print
@@ -309,9 +352,15 @@ void SetPwm(u8 PWMpercent)//(int16_t pwm[MAXMOTORS],s16 min,s16 max)
 //			pwm_tem[i] = LIMIT(pwm_tem[i],min,max);
 //	}
 	
+<<<<<<< HEAD
 	 	TIM1->CCR3 = PWMPeriod*PWMpercent;				//5	
  		TIM1->CCR4 = PWMPeriod*PWMpercent;				//6	
  		if(PWMpercent>99)
+=======
+//	 	TIM1->CCR2 = PWMPeriod*80;				//5	
+// 		TIM1->CCR3 =  PWMPeriod*80;				//6	
+// 		if(PWMpercent>99)
+>>>>>>> c88468248c9d7881eaec224e9f3ce4d1b8e3b814
  		{
 			TIM1->CCR3 =8399;
 		    TIM1->CCR4 =8399;

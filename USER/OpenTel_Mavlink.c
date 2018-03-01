@@ -324,6 +324,25 @@ void mavlink_send_text(mavlink_channel_t chan, enum gcs_severity severity, char 
             str);
     }
 }
+void pwm_check_AB(u16 seq, u8 grid_pwm)
+{
+//if(seq%2==0)   //偶数点不喷
+//SetPwm(0);
+//else if(seq%2==1)                                                                                                                                      
+//{
+//SetPwm(grid_pwm);
+//}
+SetPwm(grid_pwm);
+
+}
+
+void retrun_check_AB(u16 seq, u16 voltage_battery)
+{
+if(voltage_battery>42500)return;
+	if(seq%4==2)// A 点附近  2. 6. 10
+	{
+	}
+}
 
 
 void update(void)
@@ -332,6 +351,7 @@ void update(void)
     mavlink_message_t msg;
     mavlink_status_t status;
     status.packet_rx_drop_count = 0;
+	pwm_check_AB(mission_current.seq,  grid_pwm);
 
     // process received bytes
     while(serial_available())
@@ -450,6 +470,7 @@ u8 save_data()
     if (result != FR_OK)
     {
         printf("挂载文件系统失败 (%d)\r\n", result);
+<<<<<<< HEAD
     }
     /* 创建目录/  */
 //            result = f_mkdir(file_path);
@@ -461,6 +482,19 @@ u8 save_data()
     {
         printf("打开根目录失败 (%d)\r\n", result);
     }
+=======
+    }
+    /* 创建目录/  */
+//            result = f_mkdir(file_path);
+    result=f_mount(0, &fs);
+    /* 打开根文件夹 */
+    result = f_opendir(&DirInf, "/"); /* 如果不带参数，则从当前目录开始 */
+//            result = f_opendir(&DirInf, file_path); /* 如果不带参数，则从当前目录开始 */
+    if (result != FR_OK)
+    {
+        printf("打开根目录失败 (%d)\r\n", result);
+    }
+>>>>>>> c88468248c9d7881eaec224e9f3ce4d1b8e3b814
 //          sprintf( file_name_path,    "%s%s",file_path,file_name);
 //            printf("打开目录 (%s)\r\n", file_name_path);
     result = f_open(&file, file_name, FA_OPEN_ALWAYS | FA_WRITE);
@@ -604,7 +638,30 @@ typedef struct __smart_item_s
 {
     u8 last;
     u8 current;
+<<<<<<< HEAD
 } smart_item_s;
+=======
+
+} smart_item_s;
+
+smart_item_s smart_item;
+u8 file_result;
+typedef struct ___ab_mode_s
+{
+    u8 last;
+    u8 current;
+} ab_mode_s;
+
+ab_mode_s ab_mode;
+typedef enum AB_MODE_FLAG
+{
+//   MAV_MODE_FLAG_CUSTOM_MODE_ENABLED=1, /* 0b00000001 Reserved for future use. | */
+AB_MODE_FLAG_N=0,
+AB_MODE_FLAG_A=1,
+AB_MODE_FLAG_B=2,
+} AB_MODE_FLAG;
+
+>>>>>>> c88468248c9d7881eaec224e9f3ce4d1b8e3b814
 
 smart_item_s smart_item;
 u8 file_result;
@@ -645,6 +702,10 @@ if(voltage_battery>42500)return;
 void handleMessage(mavlink_message_t* msg)
 {
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> c88468248c9d7881eaec224e9f3ce4d1b8e3b814
     mavlink_command_long_t take_off_local= {0};
 
     take_off_local.target_system=1;
@@ -940,7 +1001,11 @@ void handleMessage(mavlink_message_t* msg)
         default:
             break;
     }     // end switch
+<<<<<<< HEAD
 	pwm_check_AB(mission_current.seq,  grid_pwm);
+=======
+	
+>>>>>>> c88468248c9d7881eaec224e9f3ce4d1b8e3b814
 	retrun_check_AB(mission_current.seq,  sys_status.voltage_battery);
 
 } // end handle mavlink

@@ -679,12 +679,14 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 
 	case MAVLINK_PARSE_STATE_GOT_COMPID:
 		rxmsg->msgid = c;
+//		printf("sgid=%d\r\n",c);
 		mavlink_update_checksum(rxmsg, c);
                 if (status->flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1) {
                     status->parse_state = MAVLINK_PARSE_STATE_GOT_MSGID3;
 #ifdef MAVLINK_CHECK_MESSAGE_LENGTH
                     if (rxmsg->len != MAVLINK_MESSAGE_LENGTH(rxmsg->msgid))
                     {
+//						printf("len=%d\r\n",rxmsg->len);
 			_mav_parse_error(status);
 			status->parse_state = MAVLINK_PARSE_STATE_IDLE;
 			break;
