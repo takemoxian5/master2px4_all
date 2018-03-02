@@ -230,7 +230,7 @@ int main(void)
             {
 //			  sysTickUptime = 0;
 //			  mavlink_send_message(0, MSG_LOCATION, 0);
-			  mavlink_send_message(0, MSG_HEARTBEAT, 0);
+			  mavlink_send_message(MAVLINK_COMM_0, MSG_HEARTBEAT, 0);
 //mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&ROI);
 
 //			mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&com);

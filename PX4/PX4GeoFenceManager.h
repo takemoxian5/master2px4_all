@@ -19,7 +19,7 @@ class PX4GeoFenceManager : public GeoFenceManager
     Q_OBJECT
     
 public:
-    PX4GeoFenceManager(Vehicle* vehicle);
+    PX4GeoFenceManager( );
     ~PX4GeoFenceManager();
 
     // Overrides from GeoFenceManager

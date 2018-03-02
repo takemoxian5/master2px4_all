@@ -31,43 +31,43 @@ public:
     QList<VehicleComponent*> componentsForVehicle(AutoPilotPlugin* vehicle) override;
     QList<MAV_CMD> supportedMissionCommands(void) override;
 
-    AutoPilotPlugin*    autopilotPlugin                 (Vehicle* vehicle) override;
+    AutoPilotPlugin*    autopilotPlugin                 ( ) override;
     bool                isCapable                       (const Vehicle *vehicle, FirmwareCapabilities capabilities) override;
-    QStringList         flightModes                     (Vehicle* vehicle) override;
+    QStringList         flightModes                     ( ) override;
     QString             flightMode                      (uint8_t base_mode, uint32_t custom_mode) const override;
     bool                setFlightMode                   (const QString& flightMode, uint8_t* base_mode, uint32_t* custom_mode) override;
-    void                setGuidedMode                   (Vehicle* vehicle, bool guidedMode) override;
+    void                setGuidedMode                   (   bool guidedMode) override;
     QString             pauseFlightMode                 (void) const override { return _holdFlightMode; }
     QString             missionFlightMode               (void) const override { return _missionFlightMode; }
     QString             rtlFlightMode                   (void) const override { return _rtlFlightMode; }
     QString             landFlightMode                  (void) const override { return _landingFlightMode; }
     QString             takeControlFlightMode           (void) const override { return _manualFlightMode; }
-    void                pauseVehicle                    (Vehicle* vehicle) override;
-    void                guidedModeRTL                   (Vehicle* vehicle) override;
-    void                guidedModeLand                  (Vehicle* vehicle) override;
-    void                guidedModeTakeoff               (Vehicle* vehicle) override;
-    void                guidedModeOrbit                 (Vehicle* vehicle, const QGeoCoordinate& centerCoord = QGeoCoordinate(), double radius = NAN, double velocity = NAN, double altitude = NAN) override;
-    void                guidedModeGotoLocation          (Vehicle* vehicle, const QGeoCoordinate& gotoCoord) override;
-    void                guidedModeChangeAltitude        (Vehicle* vehicle, double altitudeRel) override;
-    void                startMission                    (Vehicle* vehicle) override;
-    bool                isGuidedMode                    (const Vehicle* vehicle) const override;
+    void                pauseVehicle                    ( ) override;
+    void                guidedModeRTL                   ( ) override;
+    void                guidedModeLand                  ( ) override;
+    void                guidedModeTakeoff               ( ) override;
+    void                guidedModeOrbit                 (   const QGeoCoordinate& centerCoord = QGeoCoordinate(), double radius = NAN, double velocity = NAN, double altitude = NAN) override;
+    void                guidedModeGotoLocation          (   const QGeoCoordinate& gotoCoord) override;
+    void                guidedModeChangeAltitude        (   double altitudeRel) override;
+    void                startMission                    ( ) override;
+    bool                isGuidedMode                    (const  ) const override;
     int                 manualControlReservedButtonCount(void) override;
     bool                supportsManualControl           (void) override;
-    void                initializeVehicle               (Vehicle* vehicle) override;
+    void                initializeVehicle               ( ) override;
     bool                sendHomePositionToVehicle       (void) override;
     void                addMetaDataToFact               (QObject* parameterMetaData, Fact* fact, MAV_TYPE vehicleType) override;
     QString             missionCommandOverrides         (MAV_TYPE vehicleType) const override;
     QString             getVersionParam                 (void) override { return QString("SYS_PARAM_VER"); }
-    QString             internalParameterMetaDataFile   (Vehicle* vehicle) override { Q_UNUSED(vehicle); return QString(":/FirmwarePlugin/PX4/PX4ParameterFactMetaData.xml"); }
+    QString             internalParameterMetaDataFile   ( ) override { Q_UNUSED(vehicle); return QString(":/FirmwarePlugin/PX4/PX4ParameterFactMetaData.xml"); }
     void                getParameterMetaDataVersionInfo (const QString& metaDataFile, int& majorVersion, int& minorVersion) override { PX4ParameterMetaData::getParameterMetaDataVersionInfo(metaDataFile, majorVersion, minorVersion); }
     QObject*            loadParameterMetaData           (const QString& metaDataFile) final;
-    bool                adjustIncomingMavlinkMessage    (Vehicle* vehicle, mavlink_message_t* message) override;
-    GeoFenceManager*    newGeoFenceManager              (Vehicle* vehicle) override { return new PX4GeoFenceManager(vehicle); }
-    QString             offlineEditingParamFile(Vehicle* vehicle) override { Q_UNUSED(vehicle); return QStringLiteral(":/FirmwarePlugin/PX4/PX4.OfflineEditing.params"); }
-    QString             brandImageIndoor                (const Vehicle* vehicle) const override { Q_UNUSED(vehicle); return QStringLiteral("/qmlimages/PX4/BrandImage"); }
-    QString             brandImageOutdoor               (const Vehicle* vehicle) const override { Q_UNUSED(vehicle); return QStringLiteral("/qmlimages/PX4/BrandImage"); }
-    bool                vehicleYawsToNextWaypointInMission(const Vehicle* vehicle) const override;
-    QString             autoDisarmParameter             (Vehicle* vehicle) override { Q_UNUSED(vehicle); return QStringLiteral("COM_DISARM_LAND"); }
+    bool                adjustIncomingMavlinkMessage    (   mavlink_message_t* message) override;
+    GeoFenceManager*    newGeoFenceManager              ( ) override { return new PX4GeoFenceManager(vehicle); }
+    QString             offlineEditingParamFile( ) override { Q_UNUSED(vehicle); return QStringLiteral(":/FirmwarePlugin/PX4/PX4.OfflineEditing.params"); }
+    QString             brandImageIndoor                (const  ) const override { Q_UNUSED(vehicle); return QStringLiteral("/qmlimages/PX4/BrandImage"); }
+    QString             brandImageOutdoor               (const  ) const override { Q_UNUSED(vehicle); return QStringLiteral("/qmlimages/PX4/BrandImage"); }
+    bool                vehicleYawsToNextWaypointInMission(const  ) const override;
+    QString             autoDisarmParameter             ( ) override { Q_UNUSED(vehicle); return QStringLiteral("COM_DISARM_LAND"); }
 
 protected:
     typedef struct {
@@ -106,7 +106,7 @@ private slots:
     void _mavCommandResult(int vehicleId, int component, int command, int result, bool noReponseFromVehicle);
 
 private:
-    void _handleAutopilotVersion(Vehicle* vehicle, mavlink_message_t* message);
+    void _handleAutopilotVersion(   mavlink_message_t* message);
 
     // Any instance data here must be global to all vehicles
     // Vehicle specific data should go into PX4FirmwarePluginInstanceData

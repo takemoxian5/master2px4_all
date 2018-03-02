@@ -332,7 +332,7 @@ else if(seq%2==1)
 {
 SetPwm(grid_pwm);
 }
-SetPwm(grid_pwm);
+SetPwm(80);
 
 }
 u8 retrun_check_AB_flag=0;

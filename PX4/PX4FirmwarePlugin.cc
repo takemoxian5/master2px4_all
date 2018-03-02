@@ -125,7 +125,7 @@ PX4FirmwarePlugin::PX4FirmwarePlugin(void)
     }
 }
 
-AutoPilotPlugin* PX4FirmwarePlugin::autopilotPlugin(Vehicle* vehicle)
+AutoPilotPlugin* PX4FirmwarePlugin::autopilotPlugin( )
 {
     return new PX4AutoPilotPlugin(vehicle, vehicle);
 }
@@ -137,17 +137,17 @@ QList<VehicleComponent*> PX4FirmwarePlugin::componentsForVehicle(AutoPilotPlugin
     return QList<VehicleComponent*>();
 }
 
-QStringList PX4FirmwarePlugin::flightModes(Vehicle* vehicle)
+QStringList PX4FirmwarePlugin::flightModes( )
 {
     QStringList flightModes;
 
     foreach (const FlightModeInfo_t& info, _flightModeInfoList) {
         if (info.canBeSet) {
-            bool fw = (vehicle->fixedWing() && info.fixedWing);
-            bool mc = (vehicle->multiRotor() && info.multiRotor);
+            bool fw = ( fixedWing() && info.fixedWing);
+            bool mc = ( multiRotor() && info.multiRotor);
 
             // show all modes for generic, vtol, etc
-            bool other = !vehicle->fixedWing() && !vehicle->multiRotor();
+            bool other = ! fixedWing() && ! multiRotor();
 
             if (fw || mc || other) {
                 flightModes += *info.name;
@@ -227,16 +227,16 @@ bool PX4FirmwarePlugin::supportsManualControl(void)
 
 bool PX4FirmwarePlugin::isCapable(const Vehicle *vehicle, FirmwareCapabilities capabilities)
 {
-    if (vehicle->multiRotor()) {
+    if ( multiRotor()) {
         return (capabilities & (MavCmdPreflightStorageCapability | GuidedModeCapability | SetFlightModeCapability | PauseVehicleCapability /*| OrbitModeCapability still NYI*/)) == capabilities;
     } else {
         return (capabilities & (MavCmdPreflightStorageCapability | GuidedModeCapability | SetFlightModeCapability | PauseVehicleCapability)) == capabilities;
     }
 }
 
-void PX4FirmwarePlugin::initializeVehicle(Vehicle* vehicle)
+void PX4FirmwarePlugin::initializeVehicle( )
 {
-    vehicle->setFirmwarePluginInstanceData(new PX4FirmwarePluginInstanceData);
+     setFirmwarePluginInstanceData(new PX4FirmwarePluginInstanceData);
 }
 
 bool PX4FirmwarePlugin::sendHomePositionToVehicle(void)
@@ -316,9 +316,9 @@ QObject* PX4FirmwarePlugin::loadParameterMetaData(const QString& metaDataFile)
     return metaData;
 }
 
-void PX4FirmwarePlugin::pauseVehicle(Vehicle* vehicle)
+void PX4FirmwarePlugin::pauseVehicle( )
 {
-    vehicle->sendMavCommand(vehicle->defaultComponentId(),
+     sendMavCommand( defaultComponentId(),
                             MAV_CMD_DO_REPOSITION,
                             true,   // show error if failed
                             -1.0f,
@@ -330,23 +330,23 @@ void PX4FirmwarePlugin::pauseVehicle(Vehicle* vehicle)
                             NAN);
 }
 
-void PX4FirmwarePlugin::guidedModeRTL(Vehicle* vehicle)
+void PX4FirmwarePlugin::guidedModeRTL( )
 {
     _setFlightModeAndValidate(vehicle, _rtlFlightMode);
 }
 
-void PX4FirmwarePlugin::guidedModeLand(Vehicle* vehicle)
+void PX4FirmwarePlugin::guidedModeLand( )
 {
     _setFlightModeAndValidate(vehicle, _landingFlightMode);
 }
 
-void PX4FirmwarePlugin::guidedModeOrbit(Vehicle* vehicle, const QGeoCoordinate& centerCoord, double radius, double velocity, double altitude)
+void PX4FirmwarePlugin::guidedModeOrbit(  const QGeoCoordinate& centerCoord, double radius, double velocity, double altitude)
 {
     if (!isGuidedMode(vehicle)) {
         setGuidedMode(vehicle, true);
     }
 
-    vehicle->sendMavCommand(vehicle->defaultComponentId(),
+     sendMavCommand( defaultComponentId(),
                             MAV_CMD_SET_GUIDED_SUBMODE_CIRCLE,
                             true,   // show error if fails
                             radius,
@@ -360,60 +360,60 @@ void PX4FirmwarePlugin::guidedModeOrbit(Vehicle* vehicle, const QGeoCoordinate& 
 
 void PX4FirmwarePlugin::_mavCommandResult(int vehicleId, int component, int command, int result, bool noReponseFromVehicle)
 {
-    Q_UNUSED(vehicleId);
-    Q_UNUSED(component);
-    Q_UNUSED(noReponseFromVehicle);
+//    Q_UNUSED(vehicleId);
+//    Q_UNUSED(component);
+//    Q_UNUSED(noReponseFromVehicle);
 
-    Vehicle* vehicle = dynamic_cast<Vehicle*>(sender());
-    if (!vehicle) {
-        qWarning() << "Dynamic cast failed!";
-        return;
-    }
+//      = dynamic_cast<Vehicle*>(sender());
+//    if (!vehicle) {
+//        qWarning() << "Dynamic cast failed!";
+//        return;
+//    }
 
     if (command == MAV_CMD_NAV_TAKEOFF && result == MAV_RESULT_ACCEPTED) {
         // Now that we are in takeoff mode we can arm the vehicle which will cause it to takeoff.
         // We specifically don't retry arming if it fails. This way we don't fight with the user if
         // They are trying to disarm.
         disconnect(vehicle, &Vehicle::mavCommandResult, this, &PX4FirmwarePlugin::_mavCommandResult);
-        if (!vehicle->armed()) {
-            vehicle->setArmed(true);
+        if (! armed()) {
+             setArmed(true);
         }
     }
 }
 
-void PX4FirmwarePlugin::guidedModeTakeoff(Vehicle* vehicle)
+void PX4FirmwarePlugin::guidedModeTakeoff( )
 {
     QString takeoffAltParam("MIS_TAKEOFF_ALT");
 
-    if (qIsNaN(vehicle->altitudeAMSL()->rawValue().toDouble())) {
+    if (qIsNaN( altitudeAMSL()->rawValue().toDouble())) {
 //        qgcApp()->showMessage(tr("Unable to takeoff, vehicle position not known."));
         return;
     }
 
-    if (!vehicle->parameterManager()->parameterExists(FactSystem::defaultComponentId, takeoffAltParam)) {
+    if (! parameterManager()->parameterExists(FactSystem::defaultComponentId, takeoffAltParam)) {
 //        qgcApp()->showMessage(tr("Unable to takeoff, MIS_TAKEOFF_ALT parameter missing."));
         return;
     }
-    Fact* takeoffAlt = vehicle->parameterManager()->getParameter(FactSystem::defaultComponentId, takeoffAltParam);
+    Fact* takeoffAlt =  parameterManager()->getParameter(FactSystem::defaultComponentId, takeoffAltParam);
 
     connect(vehicle, &Vehicle::mavCommandResult, this, &PX4FirmwarePlugin::_mavCommandResult);
-    vehicle->sendMavCommand(vehicle->defaultComponentId(),
+     sendMavCommand( defaultComponentId(),
                             MAV_CMD_NAV_TAKEOFF,
                             true,                           // show error is fails
                             -1,                             // No pitch requested
                             0, 0,                           // param 2-4 unused
                             NAN, NAN, NAN,                  // No yaw, lat, lon
-                            vehicle->altitudeAMSL()->rawValue().toDouble() + takeoffAlt->rawValue().toDouble());
+                             altitudeAMSL()->rawValue().toDouble() + takeoffAlt->rawValue().toDouble());
 }
 
-void PX4FirmwarePlugin::guidedModeGotoLocation(Vehicle* vehicle, const QGeoCoordinate& gotoCoord)
+void PX4FirmwarePlugin::guidedModeGotoLocation(  const QGeoCoordinate& gotoCoord)
 {
-    if (qIsNaN(vehicle->altitudeAMSL()->rawValue().toDouble())) {
+    if (qIsNaN( altitudeAMSL()->rawValue().toDouble())) {
 //        qgcApp()->showMessage(tr("Unable to go to location, vehicle position not known."));
         return;
     }
 
-    vehicle->sendMavCommand(vehicle->defaultComponentId(),
+     sendMavCommand( defaultComponentId(),
                             MAV_CMD_DO_REPOSITION,
                             true,   // show error is fails
                             -1.0f,
@@ -422,24 +422,24 @@ void PX4FirmwarePlugin::guidedModeGotoLocation(Vehicle* vehicle, const QGeoCoord
                             NAN,
                             gotoCoord.latitude(),
                             gotoCoord.longitude(),
-                            vehicle->altitudeAMSL()->rawValue().toFloat());
+                             altitudeAMSL()->rawValue().toFloat());
 }
 
-void PX4FirmwarePlugin::guidedModeChangeAltitude(Vehicle* vehicle, double altitudeChange)
+void PX4FirmwarePlugin::guidedModeChangeAltitude(  double altitudeChange)
 {
-    if (!vehicle->homePosition().isValid()) {
+    if (! homePosition().isValid()) {
 //        qgcApp()->showMessage(tr("Unable to change altitude, home position unknown."));
         return;
     }
-    if (qIsNaN(vehicle->homePosition().altitude())) {
+    if (qIsNaN( homePosition().altitude())) {
 //        qgcApp()->showMessage(tr("Unable to change altitude, home position altitude unknown."));
         return;
     }
 
-    double currentAltRel = vehicle->altitudeRelative()->rawValue().toDouble();
+    double currentAltRel =  altitudeRelative()->rawValue().toDouble();
     double newAltRel = currentAltRel + altitudeChange;
 
-    vehicle->sendMavCommand(vehicle->defaultComponentId(),
+     sendMavCommand( defaultComponentId(),
                             MAV_CMD_DO_REPOSITION,
                             true,   // show error is fails
                             -1.0f,
@@ -448,10 +448,10 @@ void PX4FirmwarePlugin::guidedModeChangeAltitude(Vehicle* vehicle, double altitu
                             NAN,
                             NAN,
                             NAN,
-                            vehicle->homePosition().altitude() + newAltRel);
+                             homePosition().altitude() + newAltRel);
 }
 
-void PX4FirmwarePlugin::startMission(Vehicle* vehicle)
+void PX4FirmwarePlugin::startMission( )
 {
 
     if (_setFlightModeAndValidate(vehicle, missionFlightMode())) {
@@ -464,7 +464,7 @@ void PX4FirmwarePlugin::startMission(Vehicle* vehicle)
     }
 }
 
-void PX4FirmwarePlugin::setGuidedMode(Vehicle* vehicle, bool guidedMode)
+void PX4FirmwarePlugin::setGuidedMode(  bool guidedMode)
 {
     if (guidedMode) {
         _setFlightModeAndValidate(vehicle, _holdFlightMode);
@@ -473,14 +473,14 @@ void PX4FirmwarePlugin::setGuidedMode(Vehicle* vehicle, bool guidedMode)
     }
 }
 
-bool PX4FirmwarePlugin::isGuidedMode(const Vehicle* vehicle) const
+bool PX4FirmwarePlugin::isGuidedMode(const  ) const
 {
     // Not supported by generic vehicle
-    return (vehicle->flightMode() == _holdFlightMode || vehicle->flightMode() == _takeoffFlightMode
-            || vehicle->flightMode() == _landingFlightMode);
+    return ( flightMode() == _holdFlightMode ||  flightMode() == _takeoffFlightMode
+            ||  flightMode() == _landingFlightMode);
 }
 
-bool PX4FirmwarePlugin::adjustIncomingMavlinkMessage(Vehicle* vehicle, mavlink_message_t* message)
+bool PX4FirmwarePlugin::adjustIncomingMavlinkMessage(  mavlink_message_t* message)
 {
     //-- Don't process messages to/from UDP Bridge. It doesn't suffer from these issues
     if (message->compid == MAV_COMP_ID_UDP_BRIDGE) {
@@ -496,11 +496,11 @@ bool PX4FirmwarePlugin::adjustIncomingMavlinkMessage(Vehicle* vehicle, mavlink_m
     return true;
 }
 
-void PX4FirmwarePlugin::_handleAutopilotVersion(Vehicle* vehicle, mavlink_message_t* message)
+void PX4FirmwarePlugin::_handleAutopilotVersion(  mavlink_message_t* message)
 {
     Q_UNUSED(vehicle);
 
-    PX4FirmwarePluginInstanceData* instanceData = qobject_cast<PX4FirmwarePluginInstanceData*>(vehicle->firmwarePluginInstanceData());
+    PX4FirmwarePluginInstanceData* instanceData = qobject_cast<PX4FirmwarePluginInstanceData*>( firmwarePluginInstanceData());
     if (!instanceData->versionNotified) {
         bool notifyUser = false;
         int supportedMajorVersion = 1;
@@ -537,13 +537,13 @@ void PX4FirmwarePlugin::_handleAutopilotVersion(Vehicle* vehicle, mavlink_messag
     }
 }
 
-bool PX4FirmwarePlugin::vehicleYawsToNextWaypointInMission(const Vehicle* vehicle) const
+bool PX4FirmwarePlugin::vehicleYawsToNextWaypointInMission(const  ) const
 {
-    if (vehicle->isOfflineEditingVehicle()) {              //G201710191281 ChenYang 离线编辑状态
+    if ( isOfflineEditingVehicle()) {              //G201710191281 ChenYang 离线编辑状态
         return FirmwarePlugin::vehicleYawsToNextWaypointInMission(vehicle);
     } else {  // 多旋翼下 存在MIS_YAWMODE 模式时 对yawMode  初始化
-        if (vehicle->multiRotor() && vehicle->parameterManager()->parameterExists(FactSystem::defaultComponentId, QStringLiteral("MIS_YAWMODE"))) {
-            Fact* yawMode = vehicle->parameterManager()->getParameter(FactSystem::defaultComponentId, QStringLiteral("MIS_YAWMODE"));
+        if ( multiRotor() &&  parameterManager()->parameterExists(FactSystem::defaultComponentId, QStringLiteral("MIS_YAWMODE"))) {
+            Fact* yawMode =  parameterManager()->getParameter(FactSystem::defaultComponentId, QStringLiteral("MIS_YAWMODE"));
             return yawMode && yawMode->rawValue().toInt() == 0;//0 set by wp， 1 toward wp
         }
     }
