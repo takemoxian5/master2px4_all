@@ -24,12 +24,12 @@ void TIM1_GPIO_Config(void)
   RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA,ENABLE);
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
   GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructure.GPIO_Pin  =  GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10| GPIO_Pin_11;
+  GPIO_InitStructure.GPIO_Pin  =    GPIO_Pin_9 | GPIO_Pin_10 ;
   GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
   GPIO_Init(GPIOA,&GPIO_InitStructure);
   
-  GPIO_PinAFConfig(GPIOA,GPIO_PinSource8,GPIO_AF_TIM1); //CH1
+ // GPIO_PinAFConfig(GPIOA,GPIO_PinSource8,GPIO_AF_TIM1); //CH1
   GPIO_PinAFConfig(GPIOA,GPIO_PinSource9,GPIO_AF_TIM1);//CH2
   GPIO_PinAFConfig(GPIOA,GPIO_PinSource10,GPIO_AF_TIM1);
 
@@ -61,7 +61,7 @@ void Tim1_Config(u16 hz)
   //时基初始化
   TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1; //死区控制用。
   TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;  //计数器方向
-//  TIM_TimeBaseInitStructure.TIM_Prescaler = 0;   //Timer clock = sysclock /(TIM_Prescaler+1) = 168M
+//TIM_TimeBaseInitStructure.TIM_Prescaler = 0;   //Timer clock = sysclock /(TIM_Prescaler+1) = 168M
   TIM_TimeBaseInitStructure.TIM_RepetitionCounter = 0;
 //  TIM_TimeBaseInitStructure.TIM_Period = TimerPeriod - 1;    //Period = (TIM counter clock / TIM output clock) - 1 = 20K  50US
 
@@ -315,12 +315,12 @@ void SetPwm(u8 PWMpercent)//(int16_t pwm[MAXMOTORS],s16 min,s16 max)
 //			pwm_tem[i] = LIMIT(pwm_tem[i],min,max);
 //	}
 	
-//	 	TIM1->CCR2 = PWMPeriod*80;				//5	
-// 		TIM1->CCR3 =  PWMPeriod*80;				//6	
+//	 	TIM1->CCR2 = PWMpercent*80;				//5	
+// 		TIM1->CCR3 =  PWMpercent*80;				//6	
 // 		if(PWMpercent>99)
  		{
 			TIM1->CCR3 =8399;
-		    TIM1->CCR4 =8399;
+		    TIM1->CCR2 =8399;
 
 		}
 //	TIM1->CCR4 = PWM_RADIO *( pwm_tem[CH_out_Mapping[0]] ) + INIT_DUTY;				//1	

@@ -1,4 +1,4 @@
-#include "usart.h"
+																																																							#include "usart.h"
 #include "MissionAPI.h"
 #include "height_ctrl.h"
 #include "ctrl.h"
@@ -350,7 +350,7 @@ float gfAltitude=6.0000000;//全局变量，待移至 include
 float fight_angle;
 
 //作业参数 ，待移到SD卡
-u8 grid_pwm=50;
+u8 grid_pwm=70;
 u8 grid_space=6; //喷洒间距
 u8 grid_speed=5;
 //u8 grid_space=6; //喷洒间距
