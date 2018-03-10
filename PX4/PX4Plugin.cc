@@ -26,6 +26,52 @@
 
 #include "px4_custom_mode.h"
 
+
+
+
+
+void  sendMavCommand(int component, MAV_CMD command, bool showError, float param1, float param2, float param3, float param4, float param5, float param6, float param7)
+{
+    MavCommandQueueEntry_t entry;
+
+    entry.component = component;
+    entry.command = command;
+    entry.showError = showError;
+    entry.rgParam[0] = param1;
+    entry.rgParam[1] = param2;
+    entry.rgParam[2] = param3;
+    entry.rgParam[3] = param4;
+    entry.rgParam[4] = param5;
+    entry.rgParam[5] = param6;
+    entry.rgParam[6] = param7;
+
+    _mavCommandQueue.append(entry);
+
+    if (_mavCommandQueue.count() == 1) {
+        _mavCommandRetryCount = 0;
+        _sendMavCommandAgain();
+    }
+}
+
+
+void  pauseVehicle( )
+{
+				sendMavCommand(defaultComponentId(),
+                            MAV_CMD_DO_REPOSITION,
+                            true,   // show error if failed
+                            -1.0f,
+                            MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,
+                            0.0f,
+                            NAN,
+                            NAN,
+                            NAN,
+                            NAN);
+}
+
+
+
+
+
 PX4FirmwarePluginInstanceData::PX4FirmwarePluginInstanceData(QObject* parent)
     : QObject(parent)
     , versionNotified(false)

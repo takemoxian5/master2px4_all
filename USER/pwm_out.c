@@ -24,20 +24,19 @@ void TIM1_GPIO_Config(void)
   RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA,ENABLE);
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
   GPIO_InitStructure.GPIO_OType = GPIO_OType_PP; 
-    	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10  ;
-  GPIO_InitStructure.GPIO_PuPd =  GPIO_PuPd_NOPULL;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+  GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_9 | GPIO_Pin_10 ;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+  GPIO_InitStructure.GPIO_Speed =GPIO_Speed_100MHz;
   GPIO_Init(GPIOA,&GPIO_InitStructure);
+
   
   GPIO_PinAFConfig(GPIOA,GPIO_PinSource8,GPIO_AF_TIM1); //CH1
   GPIO_PinAFConfig(GPIOA,GPIO_PinSource9,GPIO_AF_TIM1);//CH2
   GPIO_PinAFConfig(GPIOA,GPIO_PinSource10,GPIO_AF_TIM1);
-
-   GPIO_PinAFConfig(GPIOA,GPIO_PinSource11,GPIO_AF_TIM1);
+  GPIO_PinAFConfig(GPIOA,GPIO_PinSource11,GPIO_AF_TIM1);
 //  GPIO_PinAFConfig(GPIOA,GPIO_PinSource12,GPIO_AF_TIM1);
 //  GPIO_PinAFConfig(GPIOE,GPIO_PinSource13,GPIO_AF_TIM1);
 //  GPIO_PinAFConfig(GPIOE,GPIO_PinSource14,GPIO_AF_TIM1);
-
 }
 
 //TIM1做PWM输出
@@ -247,7 +246,7 @@ u8 PWM_Out_Init(uint16_t hz)//400hz
 
   GPIO_PinAFConfig(GPIOC, GPIO_PinSource8, GPIO_AF_TIM8);
   GPIO_PinAFConfig(GPIOC, GPIO_PinSource9, GPIO_AF_TIM8);
-	
+
 	/* Compute the prescaler value */
   PrescalerValue = (uint16_t) ( ( SystemCoreClock ) / hz_set ) - 1;
   /* Time base configuration */
@@ -277,8 +276,9 @@ u8 PWM_Out_Init(uint16_t hz)//400hz
   TIM_OCInitStructure.TIM_Pulse = INIT_DUTY;
   TIM_OC4Init(TIM8, &TIM_OCInitStructure);
   //TIM_OC4PreloadConfig(TIM1, TIM_OCPreload_Enable);
-	
-	TIM_CtrlPWMOutputs(TIM8, ENABLE);
+ 
+ 
+  TIM_CtrlPWMOutputs(TIM8, ENABLE);
   TIM_ARRPreloadConfig(TIM8, ENABLE);
   TIM_Cmd(TIM8, ENABLE);
 #endif  //end of MAV_LOG_TSET
@@ -317,8 +317,8 @@ void SetPwm(u8 PWMpercent)//(int16_t pwm[MAXMOTORS],s16 min,s16 max)
 //			pwm_tem[i] = LIMIT(pwm_tem[i],min,max);
 //	}
 	
-//	 	TIM1->CCR2 = PWMpercent*83;				//5	
-// 		TIM1->CCR3 =  PWMpercent*83;				//6	
+//	 	TIM1->CCR2 =  PWMpercent*83;			//5	
+// 		TIM1->CCR3 =  PWMpercent*83;			//6	
 // 		if(PWMpercent>99)
  		{
 			TIM1->CCR4 =7399;

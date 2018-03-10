@@ -6,6 +6,10 @@
 #include "include.h"
 
 #include "cppforstm32.h"
+
+
+#include<time.h>
+
 s16 loop_cnt;
 
 
@@ -194,13 +198,10 @@ static void item_count(uint8_t system_id, uint8_t component_id, mavlink_message_
 }
 
 //mavlink_message_t msg_temp[100];//建议做局部变量
-
-
 void item_pack(mavlink_mission_item_t* msg,
                uint16_t seq, uint16_t command, float param1, float param2, float param3, float param4, float x, float y, float z)
 {
     mavlink_mission_item_t packet;
-
     msg->param1 = param1;
     msg->param2 = param2;
     msg->param3 = param3;
@@ -215,28 +216,7 @@ void item_pack(mavlink_mission_item_t* msg,
     msg->frame = 3;//command ==MAV_CMD_NAV_WAYPOINT ? 3:2;  //global_relative=3 ,mission=2
     msg->current = seq ==0? 1:0;  //set current at first point              //G201801111281 ChenYang
     msg->autocontinue = true;
-    msg->mission_type = 0;
-
-//    packet->param1 = param1;
-//    packet.param2 = param2;
-//    packet.param3 = param3;
-//    packet.param4 = param4;
-//    packet.x = x;
-//    packet.y = y;
-//    packet.z = z;
-//    packet.seq = seq;
-//    packet.command = command;
-//    packet.target_system = 1;
-//    packet.target_component = 190;
-//    packet.frame = command ==MAV_CMD_NAV_WAYPOINT ? 3:2;  //global_relative=3 ,mission=2
-//  packet.current = seq ==0? 1:0;  //set current at first point              //G201801111281 ChenYang
-//    packet.autocontinue = true;
-//    packet.mission_type = 0;
-////    msg =packet;
-//    memcpy(msg, &packet, MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN);
-//  msg->msgid = MAVLINK_MSG_ID_MISSION_ITEM;
-
-//    return mavlink_finalize_message(msg, mavlink_system.sysid, mavlink_system.compid, MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN, MAVLINK_MSG_ID_MISSION_ITEM_LEN, MAVLINK_MSG_ID_MISSION_ITEM_CRC);
+    msg->mission_type = gubMissionTypeCnt;
 }
 
 static void waypoint_send(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
@@ -351,9 +331,12 @@ float fight_angle;
 
 //作业参数 ，待移到SD卡
 u8 grid_pwm=70;
-u8 grid_space=6; //喷洒间距
+u8 gubGridSpace=6; //喷洒间距
 u8 grid_speed=5;
-//u8 grid_space=6; //喷洒间距
+u8 gubMissionTypeCnt=0;
+u8 gubDirectionAB;
+
+//u8 gubGridSpace=6; //喷洒间距
 
 
 
@@ -476,7 +459,8 @@ MAV_CMD_NAV_TAKEOFF=22
 
 
 
-	void send_one_cmd_long(mavlink_command_long_t* msg, uint16_t command,  
+	void send_one_cmd_long( 
+	uint16_t command,  
 	uint8_t confirmation,  // 0 first tansmission of this
 	float param1, float param2, float param3, float param4, float param5, float param6, float param7)
 	{
@@ -493,32 +477,18 @@ MAV_CMD_NAV_TAKEOFF=22
 		packet1.target_system = gc_target_system;
 		packet1.target_component = gc_target_component;
 		packet1.confirmation = confirmation;
-		//    packet->param1 = param1;
-//    packet.param2 = param2;
-//    packet.param3 = param3;
-//    packet.param4 = param4;
-//    packet.x = x;
-//    packet.y = y;
-//    packet.z = z;
-//    packet.seq = seq;
-//    packet.command = command;
-//    packet.target_system = 1;
-//    packet.target_component = 190;
-//    packet.frame = command ==MAV_CMD_NAV_WAYPOINT ? 3:2;  //global_relative=3 ,mission=2
-//  packet.current = seq ==0? 1:0;  //set current at first point              //G201801111281 ChenYang
-//    packet.autocontinue = true;
-//    packet.mission_type = 0;
 		_mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_COMMAND_LONG, (const char *)&packet1, MAVLINK_MSG_ID_COMMAND_LONG_MIN_LEN, MAVLINK_MSG_ID_COMMAND_LONG_LEN, MAVLINK_MSG_ID_COMMAND_LONG_CRC);
 
 	}
-	void send_one_cmd(u8 seq_cnt,coord_t coord_temp,uint16_t command,
-		float param1, float param2, float param3, float param4
-	)
+
+	
+	void send_one_miss(u8 seq_cnt,coord_t coord_temp,uint16_t command,
+		float param1, float param2, float param3, float param4)
 	{
 		mavlink_mission_item_t packet_item;
 				   item_pack( &packet_item,
 						   seq_cnt,
-						   MAV_CMD_NAV_WAYPOINT,				   //			   uint16_t command,
+						   command,				   //			   uint16_t command,
 						   param1,				   //			   float param1,
 						   param2,				   //			   float param2,
 						   param3,				   //			   float param3,
@@ -529,6 +499,90 @@ MAV_CMD_NAV_TAKEOFF=22
 						 );
 		_mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_MISSION_ITEM, (const char *)&packet_item, MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN, MAVLINK_MSG_ID_MISSION_ITEM_LEN, MAVLINK_MSG_ID_MISSION_ITEM_CRC);
 	}
+
+										/***************************************************************************
+										  Function: 		 功能函数区
+										  Description:		 flight mode
+										****************************************************************************/
+
+/***************************************************************************
+  Function:          pauseVehicle
+  Description:       hold mode
+  Input:             void
+  Output:            void
+  Return:            void
+  Others:            none
+****************************************************************************/
+ void holdMiss()
+		{
+		send_one_cmd_long( 
+                            MAV_CMD_DO_REPOSITION,
+                            1,   // 
+                            -1.0f,
+                            MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,
+                            0.0f,
+                            NAN,
+                            NAN,
+                            NAN,
+                            NAN);
+		}
+  void GotoLocation(coord_t gotoCoord)
+		{
+		send_one_cmd_long( 
+                            MAV_CMD_DO_REPOSITION,
+                            1,   // 
+                            -1.0f,
+                            MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,
+                            0.0f,
+                            NAN,
+			gotoCoord.latitude,
+			gotoCoord.longitude,
+			gotoCoord.altitude);
+
+		}
+   void ChangeAltitude(double altitudeChange)
+		{
+#ifdef next_func   //下一步开发
+//	  if (!vehicle->homePosition().isValid()) {
+//		  qgcApp()->showMessage(tr("Unable to change altitude, home position unknown."));
+//		  return;
+//	  }
+//	  if (qIsNaN(vehicle->homePosition().altitude())) {
+//		  qgcApp()->showMessage(tr("Unable to change altitude, home position altitude unknown."));
+//		  return;
+//	  }
+//	  double currentAltRel = altitudeRelative()->rawValue().toDouble();
+#endif
+	  
+	  double newAltRel = altitudeChange;
+
+
+		
+		send_one_cmd_long( 
+                            MAV_CMD_DO_REPOSITION,
+                            1,   // 
+                            -1.0f,
+                            MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,
+                            0.0f,
+                            NAN,
+                            NAN,
+                            NAN,
+                            coord_gloableHome.altitude+newAltRel);
+		}
+ void startMiss(u8 first_item,u8 last_item)
+		{
+		send_one_cmd_long( 
+                            MAV_CMD_MISSION_START,
+                            first_item,   // 
+                            last_item,
+                            NAN,
+                            NAN,
+                            NAN,
+                            NAN,
+                            NAN,
+                            NAN);
+		}
+
 
 void send_one_Waypoint(u8 seq_cnt,coord_t coord_temp)
 {
@@ -559,6 +613,8 @@ void send_one_Waypoint(u8 seq_cnt,coord_t coord_temp)
  ****************************************************************************/
  void polygon_set_AB(coord_t coord_A, coord_t coord_B,u8 direction)
  {
+ 	  gubMissionTypeCnt=rand()%250;
+	  gubDirectionAB=direction;
 		 mavlink_mission_item_t msg_temp[4];//建议做局部变量
 		 u8 seq_cnt=0;
 		 coord_t coord_temp[4];
@@ -577,8 +633,8 @@ u32 grid_angle_temp;
 		 grid_angle = (atan2(grid_distance.y, grid_distance.x) * M_RAD_TO_DEG);
 
 		 printf("grid_angle==%f \r\n",grid_angle);
-		 grid_dist_vert.x=grid_space*cos((grid_angle-90)*M_DEG_TO_RAD);
-		 grid_dist_vert.y=grid_space*sin((grid_angle-90)*M_DEG_TO_RAD);
+		 grid_dist_vert.x=gubGridSpace*cos((grid_angle-90)*M_DEG_TO_RAD);
+		 grid_dist_vert.y=gubGridSpace*sin((grid_angle-90)*M_DEG_TO_RAD);
 		 		 grid_angle_temp=(int)(90-grid_angle+360)%360;
 				 
 //		 grid_angle=90-grid_angle_temp;
@@ -600,9 +656,9 @@ u32 grid_angle_temp;
 //Start G2018011213141 CY128  send count
 		 mavlink_mission_count_t packet;
 		  packet.count = ABWAYPOINT_PLUS;
-		  packet.target_system = 1;
-		  packet.target_component = 190;
-		  packet.mission_type = 0;
+		  packet.target_system = gc_target_system;
+		  packet.target_component = gc_target_component;
+		  packet.mission_type = gubMissionTypeCnt;
 		  _mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_MISSION_COUNT, (const char *)&packet, MAVLINK_MSG_ID_MISSION_COUNT_MIN_LEN, MAVLINK_MSG_ID_MISSION_COUNT_LEN, MAVLINK_MSG_ID_MISSION_COUNT_CRC);
 //End G2018011213141 CY128 
 		  // transfer geo
@@ -610,8 +666,6 @@ u32 grid_angle_temp;
 			  coord_temp[1]=coord_B;
 //		  send_one_Waypoint(seq_cnt++,coord_A);
 //		  send_one_Waypoint(seq_cnt++,coord_B);
-
-
 	  for (	i = 2 ; i <ABWAYPOINT_PLUS+2 ; i++ )
 	 {
 			  switch (i%4)
@@ -641,6 +695,7 @@ u32 grid_angle_temp;
  //   printf("coord_tempx==%f,coord_tempy==%f ,coord_tempz==%f\r\n",coord_temp[i].latitude,coord_temp[i].longitude,coord_temp[i].altitude);
 	 send_one_Waypoint(seq_cnt++,coord_temp[i%4]);
 	 }
+
  }
  void waypoint_test(void)
 {

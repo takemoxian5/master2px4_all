@@ -29,17 +29,17 @@ uint16_t                    packet_drops;
 mavlink_heartbeat_t         heartbeat;
 mavlink_attitude_t          attitude;
 mavlink_global_position_int_t position;
-mavlink_ahrs_t              ahrs;
+	mavlink_ahrs_t              ahrs;
 
 
 
-mavlink_vfr_hud_t           vfr_hud;
-mavlink_manual_control_t    manual_control;
-mavlink_sys_status_t        sys_status;
-mavlink_local_position_ned_t local_position_ned;
-mavlink_mission_count_t mission_count;
-mavlink_mission_set_current_t mission_set_current;
-mavlink_mission_current_t mission_current;
+mavlink_vfr_hud_t           	vfr_hud;
+mavlink_manual_control_t    	manual_control;
+mavlink_sys_status_t        	sys_status;
+mavlink_local_position_ned_t 	local_position_ned;
+mavlink_mission_count_t 		mission_count;
+mavlink_mission_set_current_t 	mission_set_current;
+mavlink_mission_current_t 		mission_current;
 
 mavlink_gps_raw_int_t gps_raw_int;
 mavlink_rc_channels_t rc_channels;
@@ -99,16 +99,16 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
         case LOITER:
         case GUIDED:
         case CIRCLE:
-            base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED;
-            // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
-            // APM does in any mode, as that is defined as "system finds its own goal
-            // positions", which APM does not currently do
-            break;
+        base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED;
+        // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
+        // APM does in any mode, as that is defined as "system finds its own goal
+        // positions", which APM does not currently do
+        break;
     }
 
-    // all modes except INITIALISING have some form of manual
-    // override if stick mixing is enabled
-    base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
+		// all modes except INITIALISING have some form of manual
+		// override if stick mixing is enabled
+		base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
 
 #if HIL_MODE != HIL_MODE_DISABLED
     base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
@@ -135,14 +135,14 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 static NOINLINE void send_attitude(mavlink_channel_t chan)
 {
     mavlink_msg_attitude_send(
-        chan,
-        ++buf[1],//millis(),
-        ++buf[2],//ahrs.roll,
-        ++buf[3],//ahrs.pitch,
-        ++buf[4],//ahrs.yaw,
-        ++buf[5],//omega.x,
-        ++buf[6],//omega.y,
-        ++buf[7]);//omega.z);
+    chan,
+    ++buf[1],//millis(),
+    ++buf[2],//ahrs.roll,
+    ++buf[3],//ahrs.pitch,
+    ++buf[4],//ahrs.yaw,
+    ++buf[5],//omega.x,
+    ++buf[6],//omega.y,
+    ++buf[7]);//omega.z);
 }
 
 static void NOINLINE send_location(mavlink_channel_t chan)
@@ -338,7 +338,7 @@ SetPwm(80);
 u8 retrun_check_AB_flag=0;
 void retrun_check_AB(u16 seq, u16 voltage_battery)
 {
-        mavlink_command_long_t mission_start= {0};
+    mavlink_command_long_t mission_start= {0};
 
     mission_start.target_system=1;
     mission_start.target_component=0;
@@ -353,7 +353,6 @@ if(voltage_battery>42500)return;
     mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
 	}
 }
-
 
 void update(void)
 {
@@ -403,7 +402,7 @@ void update(void)
 }
 char  sd_data[20];//char  textFileBuffer2[40];
 char  file_name_path[40];
-char* file_name="item.txt";
+char* file_name="item.bin";
 char* file_path="/YX128";
 FRESULT result;
 FATFS fs;
@@ -503,10 +502,6 @@ u8 save_data()
     /* 卸载文件系统 */
     f_mount(0, NULL);
     return 1 ;
-
-
-
-
 #endif  //end of MAV_LOG_TSET
 }
 
@@ -629,7 +624,7 @@ u16 key_safe_last=0;
 u16 key_again=0;
 typedef struct __grid_config_s
 {
-  u8 grid_space; //喷洒间距
+  u8 gubGridSpace; //喷洒间距
   u8 grid_pwm;
   u8 grid_speed;
   float grid_angle;
@@ -662,19 +657,14 @@ AB_MODE_FLAG_A=1,
 AB_MODE_FLAG_B=2,
 } AB_MODE_FLAG;
 
-
-
 void handleMessage(mavlink_message_t* msg)
 {
-
-
     mavlink_command_long_t take_off_local= {0};
-
     take_off_local.target_system=1;
     take_off_local.target_component=0;
     take_off_local.confirmation=true;
     take_off_local.command=MAV_CMD_NAV_TAKEOFF_LOCAL;
-    take_off_local.param1=  0;
+    take_off_local.param1=0;
     take_off_local.param3=0;
     take_off_local.param4=0;
     take_off_local.param5=0;
@@ -695,38 +685,16 @@ void handleMessage(mavlink_message_t* msg)
         case MAVLINK_MSG_ID_HEARTBEAT:
         {
             mavlink_msg_heartbeat_decode(msg, &heartbeat);
+       if(coord_gloableHome.altitude==0)
+        coord_gloableHome = coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000),(((double)gps_raw_int.alt )/1000));
             break;
         }
-
         case MAVLINK_MSG_ID_ATTITUDE://机体运动姿态，俯仰 横滚大小 和速度
         {
             mavlink_msg_attitude_decode(msg, &attitude);
             break;
         }
-//        case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
-//        {
-//            mavlink_msg_global_position_int_decode(msg, &position);
-//            break;
-//        }
 
-//        case MAVLINK_MSG_ID_AHRS:
-//        {
-//            mavlink_msg_ahrs_decode(msg, &ahrs);
-//            break;
-//        }
-        case MAVLINK_MSG_ID_VFR_HUD:   //机身速度和角度
-        {
-            mavlink_msg_vfr_hud_decode(msg,&vfr_hud);
-				if(vfr_hud.groundspeed)
-            	{
-            	}
-            break;
-        }
-//        case MAVLINK_MSG_ID_MANUAL_CONTROL:
-//        {
-//            mavlink_msg_manual_control_decode(msg, &manual_control);
-//            break;
-//        }
         case MAVLINK_MSG_ID_SYS_STATUS:
         {
             mavlink_msg_sys_status_decode( msg, &sys_status);
@@ -755,7 +723,6 @@ void handleMessage(mavlink_message_t* msg)
 
 //coord_gloableA.altitude=local_position_ned.z;
                 fight_angle=attitude.yaw*M_RAD_TO_DEG;
-                printf("gps_raw_A===%d  %d    %d\r\n",gps_raw_int.lat,gps_raw_int.lon,gps_raw_int.alt);
             }
             else if(rc_channels.chan5_raw==PPM_MAX)//B  2046
             {
@@ -764,11 +731,10 @@ void handleMessage(mavlink_message_t* msg)
 				if(altitude.altitude_relative>1)
 				coord_gloableB.altitude=altitude.altitude_relative;//altitude_terrain
 				else
-	                coord_gloableB.altitude-=coord_gloableHome.altitude;//换为相对高度
+	            coord_gloableB.altitude-=coord_gloableHome.altitude;//换为相对高度
                 if(coord_gloableB.altitude>35)coord_gloableB.altitude=35;
                 if(coord_gloableB.altitude<4)coord_gloableB.altitude=4;
 //coord_gloableB.altitude=local_position_ned.z;
-                printf("gps_raw_B===%d	%d	  %d\r\n",gps_raw_int.lat,gps_raw_int.lon,gps_raw_int.alt);
             }
 
             if(rc_channels.chan7_raw  !=key_safe_last)  //A  982
@@ -785,6 +751,7 @@ void handleMessage(mavlink_message_t* msg)
             {
                 test_flag_chan11=0;
                 polygon_set_AB(  coord_gloableA,  coord_gloableB, 0);
+				
                 printf(" c1 get\r\n");
             }
             if(rc_channels.chan12_raw==PPM_MAX)    //c2 2046
@@ -940,8 +907,15 @@ void handleMessage(mavlink_message_t* msg)
         }
         case MAVLINK_MSG_ID_MISSION_REQUEST:
         {
-            mavlink_msg_mission_request_decode( msg, &mission_request);
-            printf("mission_request===%d	%d	  %d\r\n",mission_request.seq,mission_request.target_component,mission_request.mission_type);
+            mavlink_msg_mission_request_decode( msg, &mission_request);
+		if(check_need_flag)
+			{
+			check_need_flag=0;
+			if(gubMissionTypeCnt!=mission_request.mission_type)//校验不对
+				set
+
+		}
+//            printf("mission_request===%d	%d	  %d\r\n",mission_request.seq,mission_request.target_component,mission_request.mission_type);
             break;
         }
         case    MAVLINK_MSG_ID_MISSION_ACK:
@@ -960,6 +934,32 @@ void handleMessage(mavlink_message_t* msg)
 				mavlink_msg_altitude_decode(msg, &altitude);
 				break;
 		}
+#if 0
+				case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+				{
+					mavlink_msg_global_position_int_decode(msg, &position);
+					break;
+				}
+				case MAVLINK_MSG_ID_AHRS:
+				{
+					mavlink_msg_ahrs_decode(msg, &ahrs);
+					break;
+				}
+				case MAVLINK_MSG_ID_VFR_HUD:   //机身速度和角度
+				{
+					mavlink_msg_vfr_hud_decode(msg,&vfr_hud);
+						if(vfr_hud.groundspeed)
+						{
+						}
+					break;
+				}
+				case MAVLINK_MSG_ID_MANUAL_CONTROL:
+				{
+					mavlink_msg_manual_control_decode(msg, &manual_control);
+					break;
+				}
+#endif  //end of next_func
+
         default:
             break;
     }     // end switch
