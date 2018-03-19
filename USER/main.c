@@ -101,10 +101,35 @@ int main(void)
     TIM3_Int_Init(0xFFFF,8400-1);   //��ʱ��ʱ��84M����Ƶϵ��8400������84M/8400=10Khz�ļ���Ƶ��
     
     Cycle_Time_Init();
-    PWM_Out_Init(400);				//初始化电调输出功能
+//    PWM_Out_Init(400);				//初始化电调输出功能
     printf("STM32F4Discovery Board initialization finished!\r\n");
+	
+	int32_t data_32_1[]={-1,-2,-3,-4,-5,-6,-7,-8,-9,-10};
+	int32_t data_32_2[10];
+u8 j;
+	printf("\r\n32位数据：");
+	printf("\r\n擦除前：");
+	Flash_Read32BitDatas(FLASH_USER_START_ADDR,10,data_32_2);
+	for(j=0; j<10; j++)
+	{
+	printf("%d ",data_32_2[j]);
+	}
+	Flash_EraseSector(FLASH_Sector_9);
+	printf("\r\n擦除后：");
+	Flash_Read32BitDatas(FLASH_USER_START_ADDR,10,data_32_2);
+	for(j=0; j<10; j++)
+	{
+	printf("%d ",data_32_2[j]);
+	}
+	printf("\r\n读写Flash后：");
+	Flash_Write32BitDatas(FLASH_USER_START_ADDR, 10, data_32_1);
+	Flash_Read32BitDatas(FLASH_USER_START_ADDR,10,data_32_2);
+	for(j=0; j<10; j++)
+	{
+	printf("%d ",data_32_2[j]);
+	}
 
-    mavlink_system.sysid =6;//MAV_TYPE_GCS;// MAV_TYPE_GCS=6地面站角色 MAV_TYPE_FIXED_WING;//MAV_TYPE_GENERIC;
+    mavlink_system.sysid =255;//MAV_TYPE_GCS;// MAV_TYPE_GCS=6地面站角色 MAV_TYPE_FIXED_WING;//MAV_TYPE_GENERIC;
     mavlink_system.compid =0;//MAV_AUTOPILOT_GENERIC;//=0
 	mavlink_servo_output_raw_t* servo_output_raw;
 	servo_output_raw->time_usec = 20000000;

@@ -6,7 +6,7 @@
 #include "../mavlink_2/common/common.h"
 
 #include "mavlink_types.h"
-
+#include "flash.h"
 #include "define.h"
 
 #ifdef __cplusplus

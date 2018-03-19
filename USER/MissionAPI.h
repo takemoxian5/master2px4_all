@@ -80,18 +80,9 @@ void send_one_cmd_long( uint16_t command,
 	uint8_t confirmation,  // 0 first tansmission of this
 	float param1, float param2, float param3, float param4, float param5, float param6, float param7);
 
-
-
-
-
-
-
-
-
-
-
-
-
+ extern u8 gubMissionTypeCnt;
+ extern u8 gubDirectionAB;
+ extern u8 ABcheck_need_flag;
 
 #endif
 

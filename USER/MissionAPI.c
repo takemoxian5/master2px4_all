@@ -16,6 +16,51 @@ s16 loop_cnt;
 loop_t loop;
 u8  gc_target_system=1;
 u8  gc_target_component=190;
+coord_t coord_gloableA,coord_gloableB,coord_gloableLast,coord_gloableHome;
+float grid_angle;
+
+float gfAltitude=6.0000000;//全局变量，待移至 include
+#define  WAYPOINT_SIZE  10
+#define  ABWAYPOINT_SIZE  50
+#define  ABWAYPOINT_PLUS  100
+float fight_angle;
+
+//作业参数 ，待移到SD卡
+u8 grid_pwm=70;
+u8 gubGridSpace=6; //喷洒间距
+u8 grid_speed=5;
+u8 gubMissionTypeCnt=0;
+u8 gubDirectionAB=0;
+
+
+
+//作业标志
+typedef enum MAV_DO_REPOSITION_FLAGS
+{
+   WATER_COMTAINER,
+   MAV_DO_REPOSITION_FLAGS_CHANGE_MODE=1, /* The aircraft should immediately transition into guided. This should not be set for follow me applications | */
+   MAV_DO_REPOSITION_FLAGS_ENUM_END=2, /*  | */
+} MAV_DO_REPOSITION_FLAGS;
+typedef struct ___ab_flag_s
+{
+   bool water_remanining;    // 水
+   bool battery_remaining;   //
+//   bool;
+   bool battery_remaining;
+   bool battery_remaining;
+} ab_flag_s;
+
+ab_flag_s ab_flag;
+
+typedef enum AB_MODE_FLAG
+{
+    AB_MODE_FLAG_N=0,
+    AB_MODE_FLAG_A=1,
+    AB_MODE_FLAG_B=2,
+} AB_MODE_FLAG;
+
+
+u8 ABcheck_need_flag=0;  //
 
 void Loop_check()  //TIME INTTERRUPT
 {
@@ -307,7 +352,6 @@ static void waypoint_send(uint8_t system_id, uint8_t component_id, mavlink_messa
     };
     memset(&packet1, 0, sizeof(packet1));
     packet1 =packet3;
-
 #ifdef MAVLINK_STATUS_FLAG_OUT_MAVLINK1
     if (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1)
     {
@@ -317,24 +361,8 @@ static void waypoint_send(uint8_t system_id, uint8_t component_id, mavlink_messa
 #endif
     mavlink_msg_mission_item_send(MAVLINK_COMM_0, packet1.target_system, packet1.target_component, packet1.seq, packet1.frame, packet1.command, packet1.current, packet1.autocontinue, packet1.param1, packet1.param2, packet1.param3, packet1.param4, packet1.x, packet1.y, packet1.z, packet1.mission_type );
 
-
 }
 
-coord_t coord_gloableA,coord_gloableB,coord_gloableLast,coord_gloableHome;
-float grid_angle;
-
-float gfAltitude=6.0000000;//全局变量，待移至 include
-#define  WAYPOINT_SIZE  10
-#define  ABWAYPOINT_SIZE  50
-#define  ABWAYPOINT_PLUS  100
-float fight_angle;
-
-//作业参数 ，待移到SD卡
-u8 grid_pwm=70;
-u8 gubGridSpace=6; //喷洒间距
-u8 grid_speed=5;
-u8 gubMissionTypeCnt=0;
-u8 gubDirectionAB;
 
 //u8 gubGridSpace=6; //喷洒间距
 
@@ -412,7 +440,7 @@ void polygon_to_NED()
     for (int i=0; i<_mapPolygon.count(); i++)
     {
         double y, x, down;
-        QGeoCoordinate vertex = _mapPolygon.pathModel().value<QGCQGeoCoordinate*>(i)->coordinate();
+        coord_t vertex = _mapPolygon.pathModel().value<QGCcoord_t*>(i)->coordinate();
         if (i == 0)
         {
             // This avoids a nan calculation that comes out of convertGeoToNed
@@ -423,7 +451,6 @@ void polygon_to_NED()
             convertGeoToNed(vertex, tangentOrigin, &y, &x, &down);
         }
         polygonPoints += QPointF(x, y);
-//       qCDebug(SurveyMissionItemLog) << "vertex:x:y" << vertex << polygonPoints.last().x() << polygonPoints.last().y();
     }
 
 }
@@ -582,6 +609,19 @@ MAV_CMD_NAV_TAKEOFF=22
                             NAN,
                             NAN);
 		}
+ void SetServo(u8 servo,u8 pwm)
+		{
+		send_one_cmd_long( 
+                            MAV_CMD_DO_SET_SERVO,
+                            servo,   // 
+                            pwm,
+                            NAN,
+                            NAN,
+                            NAN,
+                            NAN,
+                            NAN,
+                            NAN);
+		}
 
 
 void send_one_Waypoint(u8 seq_cnt,coord_t coord_temp)
@@ -613,8 +653,10 @@ void send_one_Waypoint(u8 seq_cnt,coord_t coord_temp)
  ****************************************************************************/
  void polygon_set_AB(coord_t coord_A, coord_t coord_B,u8 direction)
  {
- 	  gubMissionTypeCnt=rand()%250;
+ 	  gubMissionTypeCnt=rand()%200;
+	  gc_target_component=20;
 	  gubDirectionAB=direction;
+	  ABcheck_need_flag=1;    //发射校验
 		 mavlink_mission_item_t msg_temp[4];//建议做局部变量
 		 u8 seq_cnt=0;
 		 coord_t coord_temp[4];
@@ -623,7 +665,7 @@ void send_one_Waypoint(u8 seq_cnt,coord_t coord_temp)
 
 		 grid_distance=convertGeoToNed(coord_A, coord_B);
 //Start G2018011813141 CY128  $AB 点误操作，判断
-		 if(grid_distance.dist<10||grid_distance.dist>200)
+		 if(grid_distance.dist<8||grid_distance.dist>200)
 {
 			printf("grid_distance==%d \r\n",grid_distance.dist);
 		 	return;
@@ -632,17 +674,19 @@ void send_one_Waypoint(u8 seq_cnt,coord_t coord_temp)
 u32 grid_angle_temp;
 		 grid_angle = (atan2(grid_distance.y, grid_distance.x) * M_RAD_TO_DEG);
 
-		 printf("grid_angle==%f \r\n",grid_angle);
 		 grid_dist_vert.x=gubGridSpace*cos((grid_angle-90)*M_DEG_TO_RAD);
 		 grid_dist_vert.y=gubGridSpace*sin((grid_angle-90)*M_DEG_TO_RAD);
 		 		 grid_angle_temp=(int)(90-grid_angle+360)%360;
-				 
-//		 grid_angle=90-grid_angle_temp;
-//		 if (grid_angle > 90.0) {
-//			 grid_angle -= 180.0;
-//		 } else if (grid_angle < -90.0) {
-//			 grid_angle += 180;
-//		 }
+				 if (grid_angle < 0.0)  
+				  		  grid_angle += 360.0;
+//				  	  grid_angle=90-grid_angle_temp;
+//				  	  if (grid_angle > 90.0) {
+//				  		  grid_angle -= 180.0;
+//				  	  } else if (grid_angle < -90.0) {
+//				  		  grid_angle += 180;
+//				  	  }
+				 printf("grid_angle==%f fight_angle==%f \r\n",grid_angle);
+
 
  if(direction==0)  //左边,方向只改变 垂直向量 方向
  {
@@ -703,6 +747,8 @@ u32 grid_angle_temp;
 	coord_A=coord_set(22.5730988,113.5782881,gfAltitude); //A
 	coord_B=coord_set(22.5733928,113.5779696,gfAltitude); //B
 	polygon_set_AB(coord_A, coord_B, 0);
+	printf(" gubMissionTypeCnt== %d\r\n",gubMissionTypeCnt);
+//	gubMissionTypeCnt++;
 }
  
  void remote_update(void)
@@ -796,5 +842,307 @@ u32 grid_angle_temp;
 	 }
 #endif
  }
+
+
+
+#if 1//def next_func
+
+ void  _generateGrid(void)
+ {
+#ifdef next_func
+	 if (_ignoreRecalc) {
+		 return;
+	 }
+ //AB 点模式
+	 if (_mapPolygon.count() < 3 || _gridSpacingFact.rawValue().toDouble() <= 0) {
+		 _clearInternal();
+		 return;
+	 }
+#endif
+	 _simpleGridPoints.clear();
+	 _transectSegments.clear();
+	 _reflyTransectSegments.clear();
+	 _additionalFlightDelaySeconds = 0;
+ 
+	 QList<QPointF> 		 polygonPoints;
+	 QList<QList<QPointF>>	 transectSegments;
+ 
+	 // Convert polygon to NED
+	 coord_t tangentOrigin = _mapPolygon.pathModel().value<QGCcoord_t*>(0)->coordinate();
+	 for (int i=0; i<_mapPolygon.count(); i++) {
+		 double y, x, down;
+		 coord_t vertex = _mapPolygon.pathModel().value<QGCcoord_t*>(i)->coordinate();
+		 if (i == 0) {
+			 // This avoids a nan calculation that comes out of convertGeoToNed
+			 x = y = 0;
+		 } else {
+			 convertGeoToNed( tangentOrigin,vertex);
+		 }
+		 polygonPoints += QPointF(x, y);
+	 }
+ 
+ //Start G2018031913148 CY128  面积计算
+	 polygonPoints = _convexPolygon(polygonPoints);
+	 double coveredArea = 0.0;
+	 for (int i=0; i<polygonPoints.count(); i++) {
+		 if (i != 0) {
+			 coveredArea += polygonPoints[i - 1].x() * polygonPoints[i].y() - polygonPoints[i].x() * polygonPoints[i -1].y();
+		 } else {
+			 coveredArea += polygonPoints.last().x() * polygonPoints[i].y() - polygonPoints[i].x() * polygonPoints.last().y();
+		 }
+	 }
+ 
+	 _setCoveredArea(0.5 * fabs(coveredArea));
+ //End G2018031913148 CY128 
+ 
+	 // Generate grid
+	 int cameraShots = 0;
+	 cameraShots += _gridGenerator(polygonPoints, transectSegments, false /* refly */);
+	 _convertTransectToGeo(transectSegments, tangentOrigin, _transectSegments);
+	 _adjustTransectsToEntryPointLocation(_transectSegments);
+	 _appendGridPointsFromTransects(_transectSegments);
+	 if (_refly90Degrees) {
+		 QVariantList reflyPointsGeo;
+ 
+		 transectSegments.clear();
+		 cameraShots += _gridGenerator(polygonPoints, transectSegments, true /* refly */);
+		 _convertTransectToGeo(transectSegments, tangentOrigin, _reflyTransectSegments);
+		 _optimizeTransectsForShortestDistance(_transectSegments.last().last(), _reflyTransectSegments);
+		 _appendGridPointsFromTransects(_reflyTransectSegments);
+	 }
+ 
+ 
+	 // Calc survey distance
+	 double surveyDistance = 0.0;
+	 for (int i=1; i<_simpleGridPoints.count(); i++) {
+		 coord_t coord1 = _simpleGridPoints[i-1].value<coord_t>();
+		 coord_t coord2 = _simpleGridPoints[i].value<coord_t>();
+		 surveyDistance += coord1.distanceTo(coord2);
+	 }
+	 _setSurveyDistance(surveyDistance);
+ 
+	 if (cameraShots == 0 && _triggerCamera()) {
+		 cameraShots = (int)floor(surveyDistance / _triggerDistance());
+		 // Take into account immediate camera trigger at waypoint entry
+		 cameraShots++;
+	 }
+	 _setCameraShots(cameraShots);
+ 
+	 if (_hoverAndCaptureEnabled()) {
+		 _additionalFlightDelaySeconds = cameraShots * _hoverAndCaptureDelaySeconds;
+	 }
+	 // Determine command count for lastSequenceNumber
+ 
+	 _missionCommandCount= 0;
+	 for (int i=0; i<_transectSegments.count(); i++) {
+		 const QList<coord_t>& transectSegment = _transectSegments[i];
+ 
+		 _missionCommandCount += transectSegment.count();	 // This accounts for all waypoints
+		 if (_hoverAndCaptureEnabled()) {
+			 // Internal camera trigger points are entry point, plus all points before exit point
+			 _missionCommandCount += transectSegment.count() - (_hasTurnaround() ? 2 : 0) - 1;
+		 } else if (_triggerCamera()) {
+			 _missionCommandCount += 2; 						 // Camera on/off at entry/exit
+		 }
+	 }
+ 
+	 // Set exit coordinate
+	 if (_simpleGridPoints.count()) {
+		 coord_t coordinate = _simpleGridPoints.first().value<coord_t>();
+		 coordinate.setAltitude(_gridAltitudeFact.rawValue().toDouble());
+		 setCoordinate(coordinate);
+		 coord_t exitCoordinate = _simpleGridPoints.last().value<coord_t>();
+		 exitCoordinate.setAltitude(_gridAltitudeFact.rawValue().toDouble());
+		 _setExitCoordinate(exitCoordinate);
+	 }
+	 setDirty(true);
+ }
+
+
+
+
+
+ //生成任务点
+ int _gridGenerator(const QList<QPointF>& polygonPoints,  QList<QList<QPointF>>& transectSegments, bool refly)
+ {
+	 int cameraShots = 0;
+	 double gridAngle = _gridAngleFact.rawValue().toDouble();
+	 double gridSpacing = _gridSpacingFact.rawValue().toDouble();
+	 gridAngle = _clampGridAngle90(gridAngle);
+	 gridAngle += refly ? 90 : 0;
+	 transectSegments.clear();
+	 // Convert polygon to bounding rect
+ 
+	 QPolygonF polygon;
+	 for (int i=0; i<polygonPoints.count(); i++) {
+		 polygon << polygonPoints[i];
+	 }
+	 polygon << polygonPoints[0];
+	 QRectF smallBoundRect = polygon.boundingRect();
+	 QPointF boundingCenter = smallBoundRect.center();
+ 
+#ifdef next_func
+	 // Rotate the bounding rect around it's center to generate the larger bounding rect
+	 QPolygonF boundPolygon;
+	 boundPolygon << _rotatePoint(smallBoundRect.topLeft(), 	 boundingCenter, gridAngle);
+	 boundPolygon << _rotatePoint(smallBoundRect.topRight(),	 boundingCenter, gridAngle);
+	 boundPolygon << _rotatePoint(smallBoundRect.bottomRight(),  boundingCenter, gridAngle);
+	 boundPolygon << _rotatePoint(smallBoundRect.bottomLeft(),	 boundingCenter, gridAngle);
+	 boundPolygon << boundPolygon[0];
+	 QRectF largeBoundRect = boundPolygon.boundingRect();
+#endif
+ 
+	 // Create set of rotated parallel lines within the expanded bounding rect. Make the lines larger than the
+	 // bounding box to guarantee intersection.
+ 
+	 QList<QLineF> lineList;
+	 bool northSouthTransects = _gridAngleIsNorthSouthTransects();
+	 int entryLocation = _gridEntryLocationFact.rawValue().toInt();
+ 
+	 if (northSouthTransects) {
+		 if (entryLocation == EntryLocationTopLeft || entryLocation == EntryLocationBottomLeft) {
+			 // Generate transects from left to right
+			 float x = largeBoundRect.topLeft().x() - (gridSpacing / 2);
+			 while (x < largeBoundRect.bottomRight().x()) {
+				 float yTop =	 largeBoundRect.topLeft().y() - 10000.0;
+				 float yBottom = largeBoundRect.bottomRight().y() + 10000.0;
+ 
+				 lineList += QLineF(_rotatePoint(QPointF(x, yTop), boundingCenter, gridAngle), _rotatePoint(QPointF(x, yBottom), boundingCenter, gridAngle));
+ 
+				 x += gridSpacing;
+			 }
+		 } else {
+			 // Generate transects from right to left
+			 float x = largeBoundRect.topRight().x() + (gridSpacing / 2);
+			 while (x > largeBoundRect.bottomLeft().x()) {
+				 float yTop =	 largeBoundRect.topRight().y() - 10000.0;
+				 float yBottom = largeBoundRect.bottomLeft().y() + 10000.0;
+ 
+				 lineList += QLineF(_rotatePoint(QPointF(x, yTop), boundingCenter, gridAngle), _rotatePoint(QPointF(x, yBottom), boundingCenter, gridAngle));
+ 
+				 x -= gridSpacing;
+			 }
+		 }
+	 } else {
+		 gridAngle = _clampGridAngle90(gridAngle - 90.0);
+		 if (entryLocation == EntryLocationTopLeft || entryLocation == EntryLocationTopRight) {
+			 // Generate transects from top to bottom
+			 float y = largeBoundRect.bottomLeft().y() + (gridSpacing / 2);
+			 while (y > largeBoundRect.topRight().y()) {
+				 float xLeft =	 largeBoundRect.bottomLeft().x() - 10000.0;
+				 float xRight =  largeBoundRect.topRight().x() + 10000.0;
+ 
+				 lineList += QLineF(_rotatePoint(QPointF(xLeft, y), boundingCenter, gridAngle), _rotatePoint(QPointF(xRight, y), boundingCenter, gridAngle));
+ 
+				 y -= gridSpacing;
+			 }
+		 } else {
+			 // Generate transects from bottom to top
+			 float y = largeBoundRect.topLeft().y() - (gridSpacing / 2);
+			 while (y < largeBoundRect.bottomRight().y()) {
+				 float xLeft =	 largeBoundRect.topLeft().x() - 10000.0;
+				 float xRight =  largeBoundRect.bottomRight().x() + 10000.0;
+ 
+				 lineList += QLineF(_rotatePoint(QPointF(xLeft, y), boundingCenter, gridAngle), _rotatePoint(QPointF(xRight, y), boundingCenter, gridAngle));
+ 
+				 y += gridSpacing;
+			 }
+		 }
+	 }
+ 
+	 // Now intersect the lines with the polygon
+	 QList<QLineF> intersectLines;
+#if 1
+	 _intersectLinesWithPolygon(lineList, polygon, intersectLines);
+#else
+	 // This is handy for debugging grid problems, not for release
+	 intersectLines = lineList;
+#endif
+ 
+	 // Less than two transects intersected with the polygon:
+	 // 	 Create a single transect which goes through the center of the polygon
+	 // 	 Intersect it with the polygon
+	 if (intersectLines.count() < 2) {
+		 _mapPolygon.center();
+		 QLineF firstLine = lineList.first();
+		 QPointF lineCenter = firstLine.pointAt(0.5);
+		 QPointF centerOffset = boundingCenter - lineCenter;
+		 firstLine.translate(centerOffset);
+		 lineList.clear();
+		 lineList.append(firstLine);
+		 intersectLines = lineList;
+		 _intersectLinesWithPolygon(lineList, polygon, intersectLines);
+	 }
+ 
+	 // Make sure all lines are going to same direction. Polygon intersection leads to line which
+	 // can be in varied directions depending on the order of the intesecting sides.
+	 QList<QLineF> resultLines;
+	 _adjustLineDirection(intersectLines, resultLines);
+ 
+	 // Calc camera shots here if there are no images in turnaround
+	 if (_triggerCamera() && !_imagesEverywhere()) {
+		 for (int i=0; i<resultLines.count(); i++) {
+			 cameraShots += (int)floor(resultLines[i].length() / _triggerDistance());
+			 // Take into account immediate camera trigger at waypoint entry
+			 cameraShots++;
+		 }
+	 }
+ 
+	 // Turn into a path
+	 for (int i=0; i<resultLines.count(); i++) {
+		 QLineF 		 transectLine;
+		 QList<QPointF>  transectPoints;
+		 const QLineF&	 line = resultLines[i];
+ 
+		 float turnaroundPosition = _turnaroundDistance() / line.length();
+ 
+		 if (i & 1) {
+			 transectLine = QLineF(line.p2(), line.p1());
+		 } else {
+			 transectLine = QLineF(line.p1(), line.p2());
+		 }
+ 
+		 // Build the points along the transect
+ 
+		 if (_hasTurnaround()) {
+			 transectPoints.append(transectLine.pointAt(-turnaroundPosition));
+		 }
+ 
+		 // Polygon entry point
+		 transectPoints.append(transectLine.p1());
+ 
+		 // For hover and capture we need points for each camera location
+		 if (_triggerCamera() && _hoverAndCaptureEnabled()) {
+			 if (_triggerDistance() < transectLine.length()) {
+				 int innerPoints = floor(transectLine.length() / _triggerDistance());
+				 float transectPositionIncrement = _triggerDistance() / transectLine.length();
+				 for (int i=0; i<innerPoints; i++) {
+					 transectPoints.append(transectLine.pointAt(transectPositionIncrement * (i + 1)));
+				 }
+			 }
+		 }
+ 
+		 // Polygon exit point
+		 transectPoints.append(transectLine.p2());
+ 
+		 if (_hasTurnaround()) {
+			 transectPoints.append(transectLine.pointAt(1 + turnaroundPosition));
+		 }
+ 
+		 transectSegments.append(transectPoints);
+	 }
+ 
+	 return cameraShots;
+ }
+
+#endif  //end of next_func
+
+
+
+
+
+
+
+
 
 

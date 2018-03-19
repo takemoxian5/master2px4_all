@@ -29,17 +29,17 @@ uint16_t                    packet_drops;
 mavlink_heartbeat_t         heartbeat;
 mavlink_attitude_t          attitude;
 mavlink_global_position_int_t position;
-	mavlink_ahrs_t              ahrs;
+mavlink_ahrs_t              ahrs;
 
 
 
-mavlink_vfr_hud_t           	vfr_hud;
-mavlink_manual_control_t    	manual_control;
-mavlink_sys_status_t        	sys_status;
-mavlink_local_position_ned_t 	local_position_ned;
-mavlink_mission_count_t 		mission_count;
-mavlink_mission_set_current_t 	mission_set_current;
-mavlink_mission_current_t 		mission_current;
+mavlink_vfr_hud_t               vfr_hud;
+mavlink_manual_control_t        manual_control;
+mavlink_sys_status_t            sys_status;
+mavlink_local_position_ned_t    local_position_ned;
+mavlink_mission_count_t         mission_count;
+mavlink_mission_set_current_t   mission_set_current;
+mavlink_mission_current_t       mission_current;
 
 mavlink_gps_raw_int_t gps_raw_int;
 mavlink_rc_channels_t rc_channels;
@@ -48,8 +48,10 @@ mavlink_mission_request_t mission_request;
 mavlink_mission_ack_t  mission_ack;
 mavlink_set_position_target_global_int_t set_position_target_global_int;
 mavlink_altitude_t  altitude;
+mavlink_system_time_t  system_time;
+mavlink_mission_request_int_t mission_request_int;
 
-uint8_t buf[100];
+uint8_t buf[30];
 //End Add By BigW
 
 
@@ -99,16 +101,16 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
         case LOITER:
         case GUIDED:
         case CIRCLE:
-        base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED;
-        // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
-        // APM does in any mode, as that is defined as "system finds its own goal
-        // positions", which APM does not currently do
-        break;
+            base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED;
+            // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
+            // APM does in any mode, as that is defined as "system finds its own goal
+            // positions", which APM does not currently do
+            break;
     }
 
-		// all modes except INITIALISING have some form of manual
-		// override if stick mixing is enabled
-		base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
+    // all modes except INITIALISING have some form of manual
+    // override if stick mixing is enabled
+    base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
 
 #if HIL_MODE != HIL_MODE_DISABLED
     base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
@@ -135,14 +137,14 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 static NOINLINE void send_attitude(mavlink_channel_t chan)
 {
     mavlink_msg_attitude_send(
-    chan,
-    ++buf[1],//millis(),
-    ++buf[2],//ahrs.roll,
-    ++buf[3],//ahrs.pitch,
-    ++buf[4],//ahrs.yaw,
-    ++buf[5],//omega.x,
-    ++buf[6],//omega.y,
-    ++buf[7]);//omega.z);
+        chan,
+        ++buf[1],//millis(),
+        ++buf[2],//ahrs.roll,
+        ++buf[3],//ahrs.pitch,
+        ++buf[4],//ahrs.yaw,
+        ++buf[5],//omega.x,
+        ++buf[6],//omega.y,
+        ++buf[7]);//omega.z);
 }
 
 static void NOINLINE send_location(mavlink_channel_t chan)
@@ -326,13 +328,13 @@ void mavlink_send_text(mavlink_channel_t chan, enum gcs_severity severity, char 
 }
 void pwm_check_AB(u16 seq, u8 grid_pwm)
 {
-if(seq%2==0)   //偶数点不喷
-SetPwm(0);
-else if(seq%2==1)                                                                                                                                      
-{
-SetPwm(grid_pwm);
-}
-SetPwm(80);
+    if(seq%2==0)   //偶数点不喷
+        SetPwm(0);
+    else if(seq%2==1)
+    {
+        SetPwm(grid_pwm);
+    }
+    SetPwm(80);
 
 }
 u8 retrun_check_AB_flag=0;
@@ -346,12 +348,12 @@ void retrun_check_AB(u16 seq, u16 voltage_battery)
     mission_start.command=MAV_CMD_MISSION_START;
     mission_start.param1=0;
     mission_start.param2=5;
-if(voltage_battery>42500)return;
-	if(seq%4==2&&retrun_check_AB_flag==0)// A 点附近  2. 6. 10
-	{
-    retrun_check_AB_flag=1;
-    mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
-	}
+    if(voltage_battery>42500)return;
+    if(seq%4==2&&retrun_check_AB_flag==0)// A 点附近  2. 6. 10
+    {
+        retrun_check_AB_flag=1;
+        mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
+    }
 }
 
 void update(void)
@@ -360,7 +362,7 @@ void update(void)
     mavlink_message_t msg;
     mavlink_status_t status;
     status.packet_rx_drop_count = 0;
-	pwm_check_AB(mission_current.seq,  grid_pwm);
+    pwm_check_AB(mission_current.seq,  grid_pwm);
 
     // process received bytes
     while(serial_available())
@@ -372,32 +374,35 @@ void update(void)
         {
             mavlink_active = true;
             handleMessage(&msg);
-//            if(
-//				msg.msgid!=MAVLINK_MSG_ID_HEARTBEAT
-//               &&msg.msgid!=MAVLINK_MSG_ID_SYS_STATUS
-//               &&msg.msgid!=MAVLINK_MSG_ID_ATTITUDE
-//               &&msg.msgid!=MAVLINK_MSG_ID_VFR_HUD //BATTERY
-//               &&msg.msgid!=MAVLINK_MSG_ID_SERVO_OUTPUT_RAW
-//               &&msg.msgid!=147 //BATTERY
-//               &&msg.msgid!=2 //sys time
-////               &&msg.msgid!=65 //rc
-//               &&msg.msgid!=70 //rc
-//               &&msg.msgid!=245 //extended
-//               &&msg.msgid!=231 //wind
-//               &&msg.msgid!=241 //vibration
-//               &&msg.msgid!=230 //estimator
-//               &&msg.msgid!=141 //altitude
-//               &&msg.msgid!=24 //gps_raw_int
-//               &&msg.msgid!=42 //mission CURRENT
-//               &&msg.msgid!=77 //COMMAND_ACK
-//              )
+            if(
+                msg.msgid!=MAVLINK_MSG_ID_HEARTBEAT     //0
+                &&msg.msgid!=MAVLINK_MSG_ID_SYS_STATUS  //1
+                &&msg.msgid!=MAVLINK_MSG_ID_ATTITUDE  //30
+                &&msg.msgid!=MAVLINK_MSG_ID_VFR_HUD //BATTERY  74
+                &&msg.msgid!=MAVLINK_MSG_ID_SERVO_OUTPUT_RAW  //36
+
+                &&msg.msgid!=2 //sys time
+                &&msg.msgid!=24 //gps_raw_int
+                &&msg.msgid!=42 //mission CURRENT
+                &&msg.msgid!=77 //COMMAND_ACK
+                &&msg.msgid!=65 //rc
+                &&msg.msgid!=70 //rc
+                &&msg.msgid!=141 //altitude
+                &&msg.msgid!=147 //BATTERY
+                &&msg.msgid!=230 //estimator
+                &&msg.msgid!=231 //wind
+                &&msg.msgid!=241 //vibration
+                &&msg.msgid!=245 //extended
+
+
+            )
                 printf("new msg msgid======+========================%d====get!\r\n",msg.msgid);
 
         }
-		else
-			{
-//			printf("error!%d\r\n",msg.msgid);
-			}
+        else
+        {
+//          printf("error!%d\r\n",msg.msgid);
+        }
     }
 }
 char  sd_data[20];//char  textFileBuffer2[40];
@@ -624,10 +629,10 @@ u16 key_safe_last=0;
 u16 key_again=0;
 typedef struct __grid_config_s
 {
-  u8 gubGridSpace; //喷洒间距
-  u8 grid_pwm;
-  u8 grid_speed;
-  float grid_angle;
+    u8 gubGridSpace; //喷洒间距
+    u8 grid_pwm;
+    u8 grid_speed;
+    float grid_angle;
 
 } grid_config_s;
 
@@ -637,7 +642,6 @@ typedef struct __smart_item_s
 {
     u8 last;
     u8 current;
-
 } smart_item_s;
 
 smart_item_s smart_item;
@@ -646,16 +650,11 @@ typedef struct ___ab_mode_s
 {
     u8 last;
     u8 current;
+    coord_t coord_gloableLast;
 } ab_mode_s;
 
 ab_mode_s ab_mode;
-typedef enum AB_MODE_FLAG
-{
-//   MAV_MODE_FLAG_CUSTOM_MODE_ENABLED=1, /* 0b00000001 Reserved for future use. | */
-AB_MODE_FLAG_N=0,
-AB_MODE_FLAG_A=1,
-AB_MODE_FLAG_B=2,
-} AB_MODE_FLAG;
+
 
 void handleMessage(mavlink_message_t* msg)
 {
@@ -685,8 +684,8 @@ void handleMessage(mavlink_message_t* msg)
         case MAVLINK_MSG_ID_HEARTBEAT:
         {
             mavlink_msg_heartbeat_decode(msg, &heartbeat);
-       if(coord_gloableHome.altitude==0)
-        coord_gloableHome = coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000),(((double)gps_raw_int.alt )/1000));
+            if(coord_gloableHome.altitude==0)
+                coord_gloableHome = coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000),(((double)gps_raw_int.alt )/1000));
             break;
         }
         case MAVLINK_MSG_ID_ATTITUDE://机体运动姿态，俯仰 横滚大小 和速度
@@ -714,10 +713,10 @@ void handleMessage(mavlink_message_t* msg)
             if(rc_channels.chan5_raw==PPM_ZERO)  //A  982
             {
                 coord_gloableA = coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000),(((double)gps_raw_int.alt )/1000));
-				if(altitude.altitude_relative>1)
-				coord_gloableA.altitude=altitude.altitude_relative;//altitude_terrain
-				else
-	                coord_gloableA.altitude-=coord_gloableHome.altitude;//换为相对高度
+                if(altitude.altitude_relative>1)
+                    coord_gloableA.altitude=altitude.altitude_relative;//altitude_terrain
+                else
+                    coord_gloableA.altitude-=coord_gloableHome.altitude;//换为相对高度
                 if(coord_gloableA.altitude>35)coord_gloableA.altitude=35;
                 if(coord_gloableA.altitude<4)coord_gloableA.altitude=4;
 
@@ -728,10 +727,10 @@ void handleMessage(mavlink_message_t* msg)
             {
                 coord_gloableB= coord_set((((double)gps_raw_int.lat )/10000000),(((double)gps_raw_int.lon )/10000000),(((double)gps_raw_int.alt )/1000));
 
-				if(altitude.altitude_relative>1)
-				coord_gloableB.altitude=altitude.altitude_relative;//altitude_terrain
-				else
-	            coord_gloableB.altitude-=coord_gloableHome.altitude;//换为相对高度
+                if(altitude.altitude_relative>1)
+                    coord_gloableB.altitude=altitude.altitude_relative;//altitude_terrain
+                else
+                    coord_gloableB.altitude-=coord_gloableHome.altitude;//换为相对高度
                 if(coord_gloableB.altitude>35)coord_gloableB.altitude=35;
                 if(coord_gloableB.altitude<4)coord_gloableB.altitude=4;
 //coord_gloableB.altitude=local_position_ned.z;
@@ -745,24 +744,40 @@ void handleMessage(mavlink_message_t* msg)
             key_safe_last=rc_channels.chan7_raw;
             if(rc_channels.chan11_raw==PPM_MAX)  //c1  2046
             {
+                if(test_flag_chan11==0)
+                    waypoint_test();
                 test_flag_chan11=1;
+
             }
-            else if(test_flag_chan11==1)
+            else
             {
                 test_flag_chan11=0;
-                polygon_set_AB(  coord_gloableA,  coord_gloableB, 0);
-				
-                printf(" c1 get\r\n");
+//                polygon_set_AB(  coord_gloableA,  coord_gloableB, 0);
+
+
+
+
+
+//                printf(" c1 get\r\n");
             }
             if(rc_channels.chan12_raw==PPM_MAX)    //c2 2046
             {
+            if(test_flag_chan12==0)
+{
+                SetServo(5,1314);
+				printf("SetServo\r\n");
+//		   		 polygon_set_AB(  coord_gloableA,  coord_gloableB, 1);
+//               printf(" c2 get\r\n");
+}
+				
                 test_flag_chan12=1;
+
             }
             else if(test_flag_chan12==1)
             {
                 test_flag_chan12=0;
-                polygon_set_AB(  coord_gloableA,  coord_gloableB, 1);
-                printf(" c2 get\r\n");
+//                polygon_set_AB(  coord_gloableA,  coord_gloableB, 1);
+//                printf(" c2 get\r\n");
             }
             switch (rc_channels.chan8_raw)
             {
@@ -789,14 +804,14 @@ void handleMessage(mavlink_message_t* msg)
             {
 //                printf("OUT %d \r\n",rc_channels.chan10_raw);
 //          mavlink_msg_set_mode_send(MAVLINK_COMM_0, 1, 89, 89);
-				grid_pwm=30;
+                grid_pwm=30;
 
                 if(test_flag_chan10==0)
                 {
                     test_flag_chan10=1;
 //              take_off_local.param5=gps_raw_int.lat;
-//  			take_off_local.param6=gps_raw_int.lon;
-//      		mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&take_off_local);
+//              take_off_local.param6=gps_raw_int.lon;
+//              mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&take_off_local);
                 }
 
 //          current_seq= (rc_channels.chan10_raw-PPM_ZERO)/200;
@@ -804,37 +819,37 @@ void handleMessage(mavlink_message_t* msg)
             }
             else if(rc_channels.chan10_raw==1747)  //流量  982 1622 1747 1862 2006
             {
-            grid_pwm=60;
-//          	  mavlink_msg_mission_set_current_send(MAVLINK_COMM_0,  1, 190, 2);
+                grid_pwm=60;
+//                mavlink_msg_mission_set_current_send(MAVLINK_COMM_0,  1, 190, 2);
 //                mission_start.command=MAV_CMD_COMPONENT_ARM_DISARM;   //解锁  无法强制进行
 //                mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
 //                mission_start.command=MAV_CMD_MISSION_START;
 #ifdef open_position
-			set_position_target_global_int.target_system=1;
-			set_position_target_global_int.target_component=190;
-			set_position_target_global_int.coordinate_frame=MAV_FRAME_GLOBAL_INT;//MAV_FRAME_LOCAL_NED;
-			set_position_target_global_int.lat_int=coord_gloableLast.latitude;
-			set_position_target_global_int.lon_int=coord_gloableLast.longitude;
-			set_position_target_global_int.alt=coord_gloableLast.altitude;
+                set_position_target_global_int.target_system=1;
+                set_position_target_global_int.target_component=190;
+                set_position_target_global_int.coordinate_frame=MAV_FRAME_GLOBAL_INT;//MAV_FRAME_LOCAL_NED;
+                set_position_target_global_int.lat_int=coord_gloableLast.latitude;
+                set_position_target_global_int.lon_int=coord_gloableLast.longitude;
+                set_position_target_global_int.alt=coord_gloableLast.altitude;
 
-			mavlink_msg_set_position_target_global_int_send_struct(MAVLINK_COMM_0,&set_position_target_global_int);
+                mavlink_msg_set_position_target_global_int_send_struct(MAVLINK_COMM_0,&set_position_target_global_int);
 #endif
 
             }
             else if(rc_channels.chan10_raw==1862)  //流量  982 1622 1747 1862 2006
             {
-            grid_pwm=90;
-            //    mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
+                grid_pwm=90;
+                //    mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
 //          mavlink_msg_set_mode_send(MAVLINK_COMM_0, 1, 89, 89);
             }
             else if(rc_channels.chan10_raw==982)  //流量  982 1622 1747 1862 2006
             {
-            grid_pwm=0;
+                grid_pwm=0;
 //          mavlink_msg_mission_set_current_send(MAVLINK_COMM_0,  1, 190, 0);
                 test_flag_chan10=0;
             }
 
-			
+
             if(rc_channels.chan9_raw==PPM_MAX)  //test   1键开始任务
             {
                 test_flag_chan9=1;
@@ -858,18 +873,18 @@ void handleMessage(mavlink_message_t* msg)
                     smart_item.last=sd_data[0];
                     printf("last %d \r\n",smart_item.last);
 //                    mission_start.param1=smart_item.last;
-					mission_start.command=MAV_CMD_MISSION_START;
+                    mission_start.command=MAV_CMD_MISSION_START;
                     //  mavlink_msg_set_mode_send(MAVLINK_COMM_0, 1, 157, 157);//开始任务 9D=
                     if(heartbeat.system_status==MAV_STATE_ACTIVE)//起飞状态才执行
-{
-						mission_start.command=45;  //clear
-						mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
-						mission_start.command=MAV_CMD_MISSION_START;
-						mission_start.param1=smart_item.last;
-						mission_start.param2=smart_item.last+5;
+                    {
+                        mission_start.command=45;  //clear
+                        mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
+                        mission_start.command=MAV_CMD_MISSION_START;
+                        mission_start.param1=smart_item.last;
+                        mission_start.param2=smart_item.last+5;
                         mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
                         mission_start.param1=0;
-}
+                    }
                 }
                 test_flag_chan16++;
             }
@@ -907,64 +922,78 @@ void handleMessage(mavlink_message_t* msg)
         }
         case MAVLINK_MSG_ID_MISSION_REQUEST:
         {
-            mavlink_msg_mission_request_decode( msg, &mission_request);
-		if(check_need_flag)
-			{
-			check_need_flag=0;
-			if(gubMissionTypeCnt!=mission_request.mission_type)//校验不对
-				set
-
-		}
-//            printf("mission_request===%d	%d	  %d\r\n",mission_request.seq,mission_request.target_component,mission_request.mission_type);
+            mavlink_msg_mission_request_decode( msg, &mission_request);
+			
+//           printf("REQUESTmission_type===%d  \r\n",mission_request.mission_type );
+//            printf("REQUESTmission_type===%d %d %d\r\n",mission_request.mission_type,mission_request.seq,mission_request.target_system);
+			ABcheck_need_flag++;
+            if(ABcheck_need_flag>5)
+            {
+            
+					// printf("ABcheck_need_flag===%d  \r\n",ABcheck_need_flag);		
+			 		 ABcheck_need_flag=0;
+					// if(gubMissionTypeCnt!=mission_request.mission_type)//校验不对
+                    polygon_set_AB(coord_gloableA,  coord_gloableB, gubDirectionAB);
+            }
+//            printf("mission_request===%d  %d    %d\r\n",mission_request.seq,mission_request.target_component,mission_request.mission_type);
             break;
         }
         case    MAVLINK_MSG_ID_MISSION_ACK:
         {
             mavlink_msg_mission_ack_decode(msg, &mission_ack);
-//    mission_ack->target_system = mavlink_msg_mission_ack_get_target_system(msg);
-//    mission_ack->target_component = mavlink_msg_mission_ack_get_target_component(msg);
-//    mission_ack->type = mavlink_msg_mission_ack_get_type(msg);
-//    mission_ack->mission_type = mavlink_msg_mission_ack_get_mission_type(msg);
-//    mission_ack.type   MAV_MISSION_ACCEPTED=0,MAV_MISSION_ERROR=1
-            printf("target_system===%d %d %d\r\n",mission_ack.mission_type,mission_ack.target_component,mission_ack.type);
+            printf("ACKmission_type===%d %d %d\r\n",mission_ack.mission_type,mission_ack.target_component,mission_ack.type);
+            printf("Lastmission_type===%d  \r\n",gubMissionTypeCnt);
             break;
         }
-		case MAVLINK_MSG_ID_ALTITUDE:
-		{
-				mavlink_msg_altitude_decode(msg, &altitude);
-				break;
-		}
+        case MAVLINK_MSG_ID_ALTITUDE:
+        {
+            mavlink_msg_altitude_decode(msg, &altitude);
+            break;
+        }
+        case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
+        {
+            mavlink_msg_mission_request_int_decode(msg, &mission_request_int);
+			printf("REQUESTmission_type===%d %d %d\r\n",mission_request_int.mission_type,mission_request_int.target_component,mission_request_int.target_system);
+            break;
+        }
+        case MAVLINK_MSG_ID_SYSTEM_TIME:
+        {
+            mavlink_msg_system_time_decode( msg, &system_time);
+            printf("system_time===%lld\r\n",system_time.time_unix_usec/10000);
+//           printf("system_time===%ld\r\n",system_time.time_unix_usec/1000);
+            break;
+        }
 #if 0
-				case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
-				{
-					mavlink_msg_global_position_int_decode(msg, &position);
-					break;
-				}
-				case MAVLINK_MSG_ID_AHRS:
-				{
-					mavlink_msg_ahrs_decode(msg, &ahrs);
-					break;
-				}
-				case MAVLINK_MSG_ID_VFR_HUD:   //机身速度和角度
-				{
-					mavlink_msg_vfr_hud_decode(msg,&vfr_hud);
-						if(vfr_hud.groundspeed)
-						{
-						}
-					break;
-				}
-				case MAVLINK_MSG_ID_MANUAL_CONTROL:
-				{
-					mavlink_msg_manual_control_decode(msg, &manual_control);
-					break;
-				}
+        case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+        {
+            mavlink_msg_global_position_int_decode(msg, &position);
+            break;
+        }
+        case MAVLINK_MSG_ID_AHRS:
+        {
+            mavlink_msg_ahrs_decode(msg, &ahrs);
+            break;
+        }
+        case MAVLINK_MSG_ID_VFR_HUD:   //机身速度和角度
+        {
+            mavlink_msg_vfr_hud_decode(msg,&vfr_hud);
+            if(vfr_hud.groundspeed)
+            {
+            }
+            break;
+        }
+        case MAVLINK_MSG_ID_MANUAL_CONTROL:
+        {
+            mavlink_msg_manual_control_decode(msg, &manual_control);
+            break;
+        }
 #endif  //end of next_func
 
         default:
             break;
     }     // end switch
-	
-	retrun_check_AB(mission_current.seq,  sys_status.voltage_battery);
+
+    retrun_check_AB(mission_current.seq,  sys_status.voltage_battery);
 
 } // end handle mavlink
 

@@ -5,6 +5,7 @@
 #include <string.h>
 fifo_t uart_rx_fifo, uart_tx_fifo;
 uint8_t uart_tx_buf[UART_TX_BUFFER_SIZE], uart_rx_buf[UART_RX_BUFFER_SIZE];
+#define open_print
 
 ///* Private function prototypes -----------------------------------------------*/
 //#ifdef __GNUC__
@@ -41,7 +42,7 @@ uint8_t uart_tx_buf[UART_TX_BUFFER_SIZE], uart_rx_buf[UART_RX_BUFFER_SIZE];
 //#define open_print
 
 
-#if 0
+#if 1
 #pragma import(__use_no_semihosting)
 //标准库需要的支持函数
 void _sys_exit(int x)
@@ -66,32 +67,48 @@ int fputc(int ch, FILE *f)
 
     return (ch);
 #endif
-
-
-
 	
 //  while((USART1->SR&0X40)==0);//循环发送,直到发送完毕
 //  USART1->DR = (u8) ch;
 //  return ch;
 }
+
+
+/****************************************************************************
+* 名    称：int fgetc(FILE *f) 
+* 功    能: 重定向scanf到串口
+* 入口参数：略
+* 出口参数：略
+* 说    明：无
+* 调用方法：无
+****************************************************************************/
+int fgetc(FILE *f) 
+{
+    int ch;
+    while (USART_GetFlagStatus(USART1, USART_FLAG_RXNE) == RESET);
+    ch = USART_ReceiveData(USART1);
+    while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET);
+    USART_SendData(USART1, (uint8_t) ch);
+    return ch;
+}
 #else
-//#ifdef __GNUC__
-//  /* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
-//     set to 'Yes') calls __io_putchar() */
-//  #define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
-//#else
-//  #define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
-//#endif /* __GNUC__ */
+#ifdef __GNUC__
+  /* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
+     set to 'Yes') calls __io_putchar() */
+  #define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#else
+  #define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#endif /* __GNUC__ */
 
 
-//PUTCHAR_PROTOTYPE
-//{
-//  /* 将Printf内容发往串口 */
-//  USART_SendData(USART1, (uint8_t)ch);
-//  while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);
+PUTCHAR_PROTOTYPE
+{
+  /* 将Printf内容发往串口 */
+  USART_SendData(USART1, (uint8_t)ch);
+  while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);
 //
-//  return (ch);
-//}
+  return (ch);
+}
 #endif
 #ifdef __cplusplus
 extern "C" {
