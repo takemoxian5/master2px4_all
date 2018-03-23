@@ -30,10 +30,10 @@ void TIM1_GPIO_Config(void)
   GPIO_Init(GPIOA,&GPIO_InitStructure);
 
   
-  GPIO_PinAFConfig(GPIOA,GPIO_PinSource8,GPIO_AF_TIM1); //CH1
+//  GPIO_PinAFConfig(GPIOA,GPIO_PinSource8,GPIO_AF_TIM1); //CH1
   GPIO_PinAFConfig(GPIOA,GPIO_PinSource9,GPIO_AF_TIM1);//CH2
   GPIO_PinAFConfig(GPIOA,GPIO_PinSource10,GPIO_AF_TIM1);
-  GPIO_PinAFConfig(GPIOA,GPIO_PinSource11,GPIO_AF_TIM1);
+//  GPIO_PinAFConfig(GPIOA,GPIO_PinSource11,GPIO_AF_TIM1);
 //  GPIO_PinAFConfig(GPIOA,GPIO_PinSource12,GPIO_AF_TIM1);
 //  GPIO_PinAFConfig(GPIOE,GPIO_PinSource13,GPIO_AF_TIM1);
 //  GPIO_PinAFConfig(GPIOE,GPIO_PinSource14,GPIO_AF_TIM1);
@@ -46,11 +46,11 @@ void Tim1_Config(u16 hz)
 	TIM_OCInitTypeDef  TIM_OCInitStructure;
 	GPIO_InitTypeDef GPIO_InitStructure;
 	u32 TimerPeriod,ccr1,ccr2,ccr3,ccr4;
-	  uint16_t PrescalerValue = 0;
-	  u32 hz_set = ACCURACY*hz;
+	 uint16_t PrescalerValue = 0;
+	 u32 hz_set = ACCURACY*hz;
 	
-	  hz_set = LIMIT (hz_set,1,SystemCoreClock);
-  TimerPeriod =  (SystemCoreClock / 20000 ) - 1;
+	hz_set = LIMIT (hz_set,1,SystemCoreClock);
+  	TimerPeriod =  (SystemCoreClock / 20000 ) - 1;
 //  ccr1 = TimerPeriod / 2;  //占空�?/2 = 50%
   ccr2 = INIT_DUTY;  //占空�?/3 = 33%
   ccr3 = INIT_DUTY;  //占空�?/4 = 25%
@@ -60,25 +60,24 @@ void Tim1_Config(u16 hz)
     PrescalerValue = (uint16_t) ( ( SystemCoreClock  ) / hz_set ) - 1;
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1,ENABLE);
   //时基初始�?
-  TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1; //死区控制用�?
-  TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;  //计数器方�?
+  TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1; //死区控制用
+  TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;  //计数器方
 //  TIM_TimeBaseInitStructure.TIM_Prescaler = 0;   //Timer clock = sysclock /(TIM_Prescaler+1) = 168M
   TIM_TimeBaseInitStructure.TIM_RepetitionCounter = 0;
 //  TIM_TimeBaseInitStructure.TIM_Period = TimerPeriod - 1;    //Period = (TIM counter clock / TIM output clock) - 1 = 20K  50US
-
   TIM_TimeBaseInitStructure.TIM_Period = ACCURACY;									
   TIM_TimeBaseInitStructure.TIM_Prescaler = PrescalerValue;	
 
   TIM_TimeBaseInit(TIM1,&TIM_TimeBaseInitStructure);
 
-  
+
   TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
   TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
   TIM_OCInitStructure.TIM_OutputNState = TIM_OutputNState_Enable;
   TIM_OCInitStructure.TIM_Pulse = ccr1;
-  TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
-  TIM_OCInitStructure.TIM_OCNPolarity = TIM_OCPolarity_High;// TIM_OCPolarity_High;//输出同相，TIM_OCNPolarity_High时输出反�?
-  TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Set;
+  TIM_OCInitStructure.TIM_OCPolarity =   TIM_OCPolarity_High;
+  TIM_OCInitStructure.TIM_OCNPolarity =  TIM_OCPolarity_High;// TIM_OCPolarity_High;//输出同相，TIM_OCNPolarity_High时输出反�?
+  TIM_OCInitStructure.TIM_OCIdleState =  TIM_OCIdleState_Set;
   TIM_OCInitStructure.TIM_OCNIdleState = TIM_OCNIdleState_Reset;
   
    TIM_OC1Init(TIM1,&TIM_OCInitStructure);
@@ -90,7 +89,7 @@ void Tim1_Config(u16 hz)
   TIM_OC3Init(TIM1,&TIM_OCInitStructure);
   
   TIM_OCInitStructure.TIM_Pulse = ccr4;
-   TIM_OC4Init(TIM1,&TIM_OCInitStructure);
+  TIM_OC4Init(TIM1,&TIM_OCInitStructure);
   
   TIM_Cmd(TIM1,ENABLE);
   TIM_CtrlPWMOutputs(TIM1,ENABLE);
@@ -321,8 +320,8 @@ void SetPwm(u8 PWMpercent)//(int16_t pwm[MAXMOTORS],s16 min,s16 max)
 // 		TIM1->CCR3 =  PWMpercent*83;			//6	
 // 		if(PWMpercent>99)
  		{
-			TIM1->CCR4 =7399;
-		    TIM1->CCR3 =5399;
+			TIM1->CCR4 =1399;
+		    TIM1->CCR3 =2399;
 //			TIM1->CCR1 =7399;
 //		    TIM1->CCR4 =7399;
 

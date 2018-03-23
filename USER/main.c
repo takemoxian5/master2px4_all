@@ -101,7 +101,9 @@ int main(void)
     TIM3_Int_Init(0xFFFF,8400-1);   //��ʱ��ʱ��84M����Ƶϵ��8400������84M/8400=10Khz�ļ���Ƶ��
     
     Cycle_Time_Init();
-//    PWM_Out_Init(400);				//初始化电调输出功能
+#ifndef open_print
+   PWM_Out_Init(60);				//初始化电调输出功能
+#endif
     printf("STM32F4Discovery Board initialization finished!\r\n");
 	
 	int32_t data_32_1[]={-1,-2,-3,-4,-5,-6,-7,-8,-9,-10};

@@ -35,19 +35,19 @@ u8 gubDirectionAB=0;
 
 
 //作业标志
-typedef enum MAV_DO_REPOSITION_FLAGS
-{
-   WATER_COMTAINER,
-   MAV_DO_REPOSITION_FLAGS_CHANGE_MODE=1, /* The aircraft should immediately transition into guided. This should not be set for follow me applications | */
-   MAV_DO_REPOSITION_FLAGS_ENUM_END=2, /*  | */
-} MAV_DO_REPOSITION_FLAGS;
+//typedef enum MAV_DO_REPOSITION_FLAGS
+//{
+//   WATER_COMTAINER,
+//   MAV_DO_REPOSITION_FLAGS_CHANGE_MODE=1, /* The aircraft should immediately transition into guided. This should not be set for follow me applications | */
+//   MAV_DO_REPOSITION_FLAGS_ENUM_END=2, /*  | */
+//} MAV_DO_REPOSITION_FLAGS;
 typedef struct ___ab_flag_s
 {
    bool water_remanining;    // 水
    bool battery_remaining;   //
 //   bool;
-   bool battery_remaining;
-   bool battery_remaining;
+//   bool battery_remaining;
+//   bool battery_remaining;
 } ab_flag_s;
 
 ab_flag_s ab_flag;
@@ -657,11 +657,11 @@ void send_one_Waypoint(u8 seq_cnt,coord_t coord_temp)
 	  gc_target_component=20;
 	  gubDirectionAB=direction;
 	  ABcheck_need_flag=1;    //发射校验
-		 mavlink_mission_item_t msg_temp[4];//建议做局部变量
-		 u8 seq_cnt=0;
-		 coord_t coord_temp[4];
-		 coordNed_t grid_distance,grid_dist_vert,grid_distance_op;
-		 u8 i;
+	 mavlink_mission_item_t msg_temp[4];//建议做局部变量
+	 u8 seq_cnt=0;
+	 coord_t coord_temp[4];
+	 coordNed_t grid_distance,grid_dist_vert,grid_distance_op;
+	 u8 i;
 
 		 grid_distance=convertGeoToNed(coord_A, coord_B);
 //Start G2018011813141 CY128  $AB 点误操作，判断
@@ -750,7 +750,9 @@ u32 grid_angle_temp;
 	printf(" gubMissionTypeCnt== %d\r\n",gubMissionTypeCnt);
 //	gubMissionTypeCnt++;
 }
+
  
+
  void remote_update(void)
  {
 	 if (myReceiver.cmdReadyFlag == 1)
@@ -844,8 +846,150 @@ u32 grid_angle_temp;
  }
 
 
+#ifdef next_func
 
-#if 1//def next_func
+
+ int SumSruct(void)
+ {
+	 int i=0,Sum=0;
+	 for(i=0;i<60;i++)
+	 {
+		 if(Student[i].Label==99)  //99是我设置的X
+		 {
+			 Sum++;
+		 }
+	 }
+	 return Sum;		 //返回长度
+ } 
+ //#define outmsg3(str,x,y,z) printf("%s==%f,==%f ,==%f\r\n",x,y,z)
+  /***************************************************************************
+	Function:		   polygon_set_AB
+	Description:	   send count
+	Input:			   coord_t coord_A		//send count
+					   coord_t coord_B		//send count
+					   bool direction		//0 left  1  right
+	Output: 		   void
+	Return: 		   void
+	Others: 		   none
+  ****************************************************************************/
+  void polygon_set_ABC(void)
+  {
+
+  	 // Convert polygon to NED
+	 coordNed_t out_coor;
+	 coordNed_t *polygonPoints;
+	 coordNed_t _mapPolygon[5];
+	 coord_t tangentOrigin =_mapPolygon[0] ;//_mapPolygon.pathModel().value<QGCcoord_t*>(0)->coordinate();
+	 for (int i=0; i<_mapPolygon_count; i++) {
+		 coord_t vertex =_mapPolygon[i] ;
+		 if (i == 0) {
+			 // This avoids a nan calculation that comes out of convertGeoToNed
+			 polygonPoints[i]= {0,0,0,0};
+		 } else {
+			 polygonPoints[i]=convertGeoToNed(tangentOrigin,vertex);
+		 }
+	 }
+ //Start G2018031913148 CY128  面积计算
+	 polygonPoints = _convexPolygon(polygonPoints);
+	 double coveredArea = 0.0;
+	 for (int i=0; i<polygonPoints.count(); i++) {
+		 if (i != 0) {
+			 coveredArea += polygonPoints[i - 1].x* polygonPoints[i].y - polygonPoints[i].x* polygonPoints[i -1].y;
+		 } else {
+			 coveredArea += polygonPoints.last().x* polygonPoints[i].y - polygonPoints[i].x* polygonPoints.last().y;
+		 }
+	 }
+ 
+	 _setCoveredArea(0.5 * fabs(coveredArea));
+ //End G2018031913148 CY128 
+	   gubMissionTypeCnt=rand()%200;
+	   gc_target_component=20;
+	   gubDirectionAB=direction;
+	   ABcheck_need_flag=1;    //发射校验
+		  mavlink_mission_item_t msg_temp[4];//建议做局部变量
+		  u8 seq_cnt=0;
+		  coord_t coord_temp[4];
+		  coordNed_t grid_distance,grid_dist_vert,grid_distance_op;
+		  u8 i;
+ 
+		  grid_distance=convertGeoToNed(coord_A, coord_B);
+ //Start G2018011813141 CY128  $AB 点误操作，判断
+		  if(grid_distance.dist<8||grid_distance.dist>200)
+ {
+		 printf("grid_distance==%d \r\n",grid_distance.dist);
+		 return;
+ }
+ //End G2018011813141 CY128 
+ u32 grid_angle_temp;
+		  grid_angle = (atan2(grid_distance.y, grid_distance.x) * M_RAD_TO_DEG);
+ 
+		  grid_dist_vert.x=gubGridSpace*cos((grid_angle-90)*M_DEG_TO_RAD);
+		  grid_dist_vert.y=gubGridSpace*sin((grid_angle-90)*M_DEG_TO_RAD);
+				  grid_angle_temp=(int)(90-grid_angle+360)%360;
+				  if (grid_angle < 0.0)  
+						   grid_angle += 360.0;
+ // 				   grid_angle=90-grid_angle_temp;
+ // 				   if (grid_angle > 90.0) {
+ // 					   grid_angle -= 180.0;
+ // 				   } else if (grid_angle < -90.0) {
+ // 					   grid_angle += 180;
+ // 				   }
+				  printf("grid_angle==%f fight_angle==%f \r\n",grid_angle);
+ 
+ 
+  if(direction==0)	//左边,方向只改变 垂直向量 方向
+  {
+		  grid_dist_vert.x=-grid_dist_vert.x;
+		  grid_dist_vert.y=-grid_dist_vert.y;
+  }
+		  grid_distance_op.x=-grid_distance.x;
+		  grid_distance_op.y=-grid_distance.y;
+		  grid_distance_op.z=-grid_distance.z;
+		  printf("grid_dist_vertx==%f,grid_dist_verty==%f ,grid_dist_verty==%f\r\n",grid_dist_vert.x,grid_dist_vert.y,grid_dist_vert.z);
+ //Start G2018011213141 CY128  send count
+		  mavlink_mission_count_t packet;
+		   packet.count = ABWAYPOINT_PLUS;
+		   packet.target_system = gc_target_system;
+		   packet.target_component = gc_target_component;
+		   packet.mission_type = gubMissionTypeCnt;
+		   _mav_finalize_message_chan_send(MAVLINK_COMM_0, MAVLINK_MSG_ID_MISSION_COUNT, (const char *)&packet, MAVLINK_MSG_ID_MISSION_COUNT_MIN_LEN, MAVLINK_MSG_ID_MISSION_COUNT_LEN, MAVLINK_MSG_ID_MISSION_COUNT_CRC);
+ //End G2018011213141 CY128 
+		   // transfer geo
+			   coord_temp[0]=coord_A;
+			   coord_temp[1]=coord_B;
+ // 	   send_one_Waypoint(seq_cnt++,coord_A);
+ // 	   send_one_Waypoint(seq_cnt++,coord_B);
+	   for ( i = 2 ; i <ABWAYPOINT_PLUS+2 ; i++ )
+	  {
+			   switch (i%4)
+		  {
+			case 0: //v+
+			//奇数点
+				  {
+				  coord_temp[i%4]=convertNedToGeo(coord_temp[(i+3)%4],grid_dist_vert);
+						break;
+				  }
+			case 1: //d+
+				  {
+				  coord_temp[i%4]=convertNedToGeo(coord_temp[(i+3)%4],grid_distance);
+						break;
+				  }
+			case 2:  // v+
+				  {
+				  coord_temp[i%4]=convertNedToGeo(coord_temp[(i+3)%4],grid_dist_vert);
+						break;
+				  }
+			case 3:  //d-
+				  {
+				  coord_temp[i%4]=convertNedToGeo(coord_temp[(i+3)%4],grid_distance_op);
+				   break;
+				  }
+		  }
+  //   printf("coord_tempx==%f,coord_tempy==%f ,coord_tempz==%f\r\n",coord_temp[i].latitude,coord_temp[i].longitude,coord_temp[i].altitude);
+	  send_one_Waypoint(seq_cnt++,coord_temp[i%4]);
+	  }
+ 
+  }
 
  void  _generateGrid(void)
  {
@@ -863,32 +1007,29 @@ u32 grid_angle_temp;
 	 _transectSegments.clear();
 	 _reflyTransectSegments.clear();
 	 _additionalFlightDelaySeconds = 0;
- 
-	 QList<QPointF> 		 polygonPoints;
 	 QList<QList<QPointF>>	 transectSegments;
- 
 	 // Convert polygon to NED
-	 coord_t tangentOrigin = _mapPolygon.pathModel().value<QGCcoord_t*>(0)->coordinate();
-	 for (int i=0; i<_mapPolygon.count(); i++) {
-		 double y, x, down;
-		 coord_t vertex = _mapPolygon.pathModel().value<QGCcoord_t*>(i)->coordinate();
+	 coordNed_t out_coor;
+	 coordNed_t *polygonPoints;
+	 coordNed_t _mapPolygon[5];
+	 coord_t tangentOrigin =_mapPolygon[0] ;//_mapPolygon.pathModel().value<QGCcoord_t*>(0)->coordinate();
+	 for (int i=0; i<_mapPolygon_count; i++) {
+		 coord_t vertex =_mapPolygon[i] ;
 		 if (i == 0) {
 			 // This avoids a nan calculation that comes out of convertGeoToNed
-			 x = y = 0;
+			 polygonPoints[i]= {0,0,0,0};
 		 } else {
-			 convertGeoToNed( tangentOrigin,vertex);
+			 polygonPoints[i]=convertGeoToNed(tangentOrigin,vertex);
 		 }
-		 polygonPoints += QPointF(x, y);
 	 }
- 
  //Start G2018031913148 CY128  面积计算
 	 polygonPoints = _convexPolygon(polygonPoints);
 	 double coveredArea = 0.0;
 	 for (int i=0; i<polygonPoints.count(); i++) {
 		 if (i != 0) {
-			 coveredArea += polygonPoints[i - 1].x() * polygonPoints[i].y() - polygonPoints[i].x() * polygonPoints[i -1].y();
+			 coveredArea += polygonPoints[i - 1].x* polygonPoints[i].y - polygonPoints[i].x* polygonPoints[i -1].y;
 		 } else {
-			 coveredArea += polygonPoints.last().x() * polygonPoints[i].y() - polygonPoints[i].x() * polygonPoints.last().y();
+			 coveredArea += polygonPoints.last().x* polygonPoints[i].y - polygonPoints[i].x* polygonPoints.last().y;
 		 }
 	 }
  
@@ -972,7 +1113,6 @@ u32 grid_angle_temp;
 	 gridAngle += refly ? 90 : 0;
 	 transectSegments.clear();
 	 // Convert polygon to bounding rect
- 
 	 QPolygonF polygon;
 	 for (int i=0; i<polygonPoints.count(); i++) {
 		 polygon << polygonPoints[i];
@@ -1002,10 +1142,10 @@ u32 grid_angle_temp;
 	 if (northSouthTransects) {
 		 if (entryLocation == EntryLocationTopLeft || entryLocation == EntryLocationBottomLeft) {
 			 // Generate transects from left to right
-			 float x = largeBoundRect.topLeft().x() - (gridSpacing / 2);
+			 float x = largeBoundRect.topLeft().x- (gridSpacing / 2);
 			 while (x < largeBoundRect.bottomRight().x()) {
-				 float yTop =	 largeBoundRect.topLeft().y() - 10000.0;
-				 float yBottom = largeBoundRect.bottomRight().y() + 10000.0;
+				 float yTop =	 largeBoundRect.topLeft().y - 10000.0;
+				 float yBottom = largeBoundRect.bottomRight().y + 10000.0;
  
 				 lineList += QLineF(_rotatePoint(QPointF(x, yTop), boundingCenter, gridAngle), _rotatePoint(QPointF(x, yBottom), boundingCenter, gridAngle));
  
@@ -1013,11 +1153,10 @@ u32 grid_angle_temp;
 			 }
 		 } else {
 			 // Generate transects from right to left
-			 float x = largeBoundRect.topRight().x() + (gridSpacing / 2);
+			 float x = largeBoundRect.topRight().x+ (gridSpacing / 2);
 			 while (x > largeBoundRect.bottomLeft().x()) {
-				 float yTop =	 largeBoundRect.topRight().y() - 10000.0;
-				 float yBottom = largeBoundRect.bottomLeft().y() + 10000.0;
- 
+				 float yTop =	 largeBoundRect.topRight().y - 10000.0;
+				 float yBottom = largeBoundRect.bottomLeft().y + 10000.0;
 				 lineList += QLineF(_rotatePoint(QPointF(x, yTop), boundingCenter, gridAngle), _rotatePoint(QPointF(x, yBottom), boundingCenter, gridAngle));
  
 				 x -= gridSpacing;
@@ -1027,10 +1166,10 @@ u32 grid_angle_temp;
 		 gridAngle = _clampGridAngle90(gridAngle - 90.0);
 		 if (entryLocation == EntryLocationTopLeft || entryLocation == EntryLocationTopRight) {
 			 // Generate transects from top to bottom
-			 float y = largeBoundRect.bottomLeft().y() + (gridSpacing / 2);
-			 while (y > largeBoundRect.topRight().y()) {
-				 float xLeft =	 largeBoundRect.bottomLeft().x() - 10000.0;
-				 float xRight =  largeBoundRect.topRight().x() + 10000.0;
+			 float y = largeBoundRect.bottomLeft().y + (gridSpacing / 2);
+			 while (y > largeBoundRect.topRight().y) {
+				 float xLeft =	 largeBoundRect.bottomLeft().x- 10000.0;
+				 float xRight =  largeBoundRect.topRight().x+ 10000.0;
  
 				 lineList += QLineF(_rotatePoint(QPointF(xLeft, y), boundingCenter, gridAngle), _rotatePoint(QPointF(xRight, y), boundingCenter, gridAngle));
  
@@ -1038,10 +1177,10 @@ u32 grid_angle_temp;
 			 }
 		 } else {
 			 // Generate transects from bottom to top
-			 float y = largeBoundRect.topLeft().y() - (gridSpacing / 2);
-			 while (y < largeBoundRect.bottomRight().y()) {
-				 float xLeft =	 largeBoundRect.topLeft().x() - 10000.0;
-				 float xRight =  largeBoundRect.bottomRight().x() + 10000.0;
+			 float y = largeBoundRect.topLeft().y - (gridSpacing / 2);
+			 while (y < largeBoundRect.bottomRight().y) {
+				 float xLeft =	 largeBoundRect.topLeft().x- 10000.0;
+				 float xRight =  largeBoundRect.bottomRight().x+ 10000.0;
  
 				 lineList += QLineF(_rotatePoint(QPointF(xLeft, y), boundingCenter, gridAngle), _rotatePoint(QPointF(xRight, y), boundingCenter, gridAngle));
  

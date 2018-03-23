@@ -5,7 +5,7 @@
 #include <string.h>
 fifo_t uart_rx_fifo, uart_tx_fifo;
 uint8_t uart_tx_buf[UART_TX_BUFFER_SIZE], uart_rx_buf[UART_RX_BUFFER_SIZE];
-#define open_print
+//#define open_print
 
 ///* Private function prototypes -----------------------------------------------*/
 //#ifdef __GNUC__
@@ -39,9 +39,7 @@ uint8_t uart_tx_buf[UART_TX_BUFFER_SIZE], uart_rx_buf[UART_RX_BUFFER_SIZE];
 
 
 
-//#define open_print
-
-
+#define open_print
 #if 1
 #pragma import(__use_no_semihosting)
 //标准库需要的支持函数

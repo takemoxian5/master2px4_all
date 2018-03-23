@@ -415,6 +415,8 @@ DIR DirInf;
 //FILINFO FileInf;
 FIL file;
 uint32_t bw;
+
+
 u8 save_data()
 {
 #if 1
@@ -610,6 +612,8 @@ u8 read_data()
 
 
 }
+
+
 ///for rc
 #define PPM_ZERO_CENTRE 1514  //平衡零点
 #define PPM_ZERO 982
@@ -655,6 +659,22 @@ typedef struct ___ab_mode_s
 
 ab_mode_s ab_mode;
 
+// void save_config()
+//{
+//			 	 Flash_Read32BitDatas(FLASH_USER_START_ADDR,10,32);
+//				 for(j=0; j<10; j++)
+//				 {
+//				 printf("%d ",data_32_2[j]);
+//				 }
+//				 Flash_EraseSector(FLASH_Sector_9);
+//				 printf("\r\n擦除后：");
+//				 Flash_Read32BitDatas(FLASH_USER_START_ADDR,10,32);
+//				 for(j=0; j<10; j++)
+//				 {
+//				 printf("%d ",data_32_2[j]);
+//				 }
+
+// }
 
 void handleMessage(mavlink_message_t* msg)
 {
@@ -805,10 +825,11 @@ void handleMessage(mavlink_message_t* msg)
 //                printf("OUT %d \r\n",rc_channels.chan10_raw);
 //          mavlink_msg_set_mode_send(MAVLINK_COMM_0, 1, 89, 89);
                 grid_pwm=30;
+				PWM_Out_Init(1);
 
                 if(test_flag_chan10==0)
                 {
-                    test_flag_chan10=1;
+                test_flag_chan10=1;
 //              take_off_local.param5=gps_raw_int.lat;
 //              take_off_local.param6=gps_raw_int.lon;
 //              mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&take_off_local);
@@ -820,6 +841,7 @@ void handleMessage(mavlink_message_t* msg)
             else if(rc_channels.chan10_raw==1747)  //流量  982 1622 1747 1862 2006
             {
                 grid_pwm=60;
+				PWM_Out_Init(5);
 //                mavlink_msg_mission_set_current_send(MAVLINK_COMM_0,  1, 190, 2);
 //                mission_start.command=MAV_CMD_COMPONENT_ARM_DISARM;   //解锁  无法强制进行
 //                mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
@@ -839,6 +861,7 @@ void handleMessage(mavlink_message_t* msg)
             else if(rc_channels.chan10_raw==1862)  //流量  982 1622 1747 1862 2006
             {
                 grid_pwm=90;
+				PWM_Out_Init(75);
                 //    mavlink_msg_command_long_send_struct(MAVLINK_COMM_0,&mission_start);
 //          mavlink_msg_set_mode_send(MAVLINK_COMM_0, 1, 89, 89);
             }
